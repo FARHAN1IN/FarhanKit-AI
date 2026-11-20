@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free CV Maker</title>
+  <meta name="description" content="Create a clean, professional CV in minutes and download it as PDF. Free, no sign-up — your data stays in your browser.">
+  <link rel="icon" id="favicon" href="assets/img/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/css/variables.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/cv.css">
+  <script type="module" src="assets/js/cv-maker.js"></script>
+</head>
+<body>
+  <main class="container cv-page">
+    <div class="cv-bar no-print">
+      <div>
+        <h1 id="maker-title">Create your CV</h1>
+        <p>Fill in what you have — empty parts are left out. Nothing is uploaded; your draft stays in this browser.</p>
+      </div>
+      <div class="cv-bar__actions">
+        <a class="btn btn--ghost btn--sm" href="/">← Back to site</a>
+        <button class="btn btn--ghost btn--sm" id="reset-btn" type="button">Start over</button>
+        <button class="btn btn--primary btn--sm" id="download-btn" type="button">Download PDF</button>
+      </div>
+    </div>
+    <div id="builder"><p class="muted">Loading…</p></div>
+  </main>
+</body>
+</html>

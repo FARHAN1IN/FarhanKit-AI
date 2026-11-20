@@ -1,0 +1,28 @@
+[
+  {
+    "id": "exp-2",
+    "role": "Frontend Developer",
+    "company": "Bright Studio",
+    "location": "Hybrid",
+    "start": "2022-01",
+    "end": "2024-02",
+    "summary": "Built marketing sites and e-commerce storefronts for agency clients.",
+    "highlights": [
+      "Delivered 15+ client projects on schedule",
+      "Introduced a shared component library and design tokens"
+    ]
+  },
+  {
+    "id": "exp-3",
+    "role": "B.Sc. Computer Science",
+    "company": "State University",
+    "location": "On campus",
+    "start": "2018-09",
+    "end": "2021-12",
+    "summary": "Focus on software engineering, databases and human–computer interaction.",
+    "highlights": [
+      "Graduated with honors",
+      "Capstone: real-time collaborative editor"
+    ]
+  }
+]

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Portfolio Admin</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/css/variables.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/admin.css">
+  <link rel="stylesheet" href="assets/css/cv.css">
+  <script type="module" src="assets/js/admin/main.js"></script>
+</head>
+<body>
+  <header class="navbar is-scrolled">
+    <div class="container navbar__inner">
+      <a class="brand" href="/">Admin</a>
+      <div class="navbar__actions">
+        <a class="btn btn--ghost btn--sm" href="/" target="_blank" rel="noopener">View site ↗</a>
+        <span class="muted admin__user" id="current-user" hidden></span>
+        <button class="btn btn--ghost btn--sm" id="logout" type="button" hidden>Log out</button>
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container admin">
+    <!-- Login -->
+    <section id="login-view" class="admin__login" hidden>
+      <form class="card form" id="login-form">
+        <h1>Admin login</h1>
+        <p class="muted">Sign in to manage your portfolio.</p>
+        <label class="field">
+          <span>Username</span>
+          <input id="username-input" name="username" required autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="40">
+        </label>
+        <div class="field">
+          <label for="password-input">Password</label>
+          <div class="password-field">
+            <input id="password-input" name="password" type="password" required autocomplete="current-password" maxlength="200">
+            <button class="password-field__toggle" type="button" data-toggle-password="password-input" aria-label="Show password" aria-pressed="false" aria-controls="password-input"></button>
+          </div>
+        </div>
+        <button class="btn btn--primary btn--block" type="submit">Sign in</button>
+        <p class="form-status" id="login-status" role="status"></p>
+      </form>
+    </section>
+
+    <!-- Dashboard: tabs and panels are rendered by assets/js/admin/main.js -->
+    <section id="dashboard-view" hidden>
+      <nav class="tabs" id="tabs" role="tablist" aria-label="Admin sections"></nav>
+      <div id="panel" role="tabpanel"></div>
+    </section>
+  </main>
+</body>
+</html>

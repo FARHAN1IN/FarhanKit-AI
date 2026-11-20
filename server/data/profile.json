@@ -1,0 +1,56 @@
+{
+  "name": "Farhanul Islam",
+  "initials": "YN",
+  "logoImage": "",
+  "avatar": "",
+  "title": "SQA",
+  "roles": [
+    "Full-Stack Developer",
+    "UI Engineer",
+    "Problem Solver"
+  ],
+  "tagline": "I build fast, accessible and thoughtfully designed web applications.",
+  "about": [
+    "I'm a developer who enjoys turning complex problems into simple, elegant interfaces. I care about clean architecture, performance and the small details that make a product feel good to use.",
+    "Over the past few years I've shipped production apps end to end — from database schema and REST APIs to pixel-polished frontends. When I'm not coding, I'm reading, learning a new tool, or contributing to open source."
+  ],
+  "location": "Your City, Country",
+  "email": "hello@example.com",
+  "availability": "Open to new opportunities",
+  "resumeUrl": "",
+  "stats": [
+    {
+      "label": "Years experience",
+      "value": 4,
+      "suffix": "+"
+    },
+    {
+      "label": "Projects shipped",
+      "value": 25,
+      "suffix": "+"
+    },
+    {
+      "label": "Happy clients",
+      "value": 12,
+      "suffix": "+"
+    }
+  ],
+  "socials": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/",
+      "icon": "github"
+    },
+    {
+      "name": "LinkedIn",
+      "url": "https://linkedin.com/",
+      "icon": "linkedin"
+    },
+    {
+      "name": "X",
+      "url": "https://x.com/",
+      "icon": "x"
+    }
+  ],
+  "updatedAt": "2026-11-20T18:39:19.157Z"
+}

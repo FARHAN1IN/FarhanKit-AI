@@ -1,0 +1,8 @@
+node_modules/
+.env
+*.tmp
+server/data/messages.json
+server/data/admin.json
+server/data/ai-wallets.json
+server/data/ai-payments.json
+server/data/ai-ip-usage.json

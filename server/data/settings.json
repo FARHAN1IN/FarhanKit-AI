@@ -1,0 +1,60 @@
+{
+  "siteTitle": "",
+  "metaDescription": "Personal portfolio — projects, skills, experience and contact.",
+  "favicon": "",
+  "accentColor": "#7c5cff",
+  "accentColor2": "#22d3ee",
+  "footerText": "© {year} {name}. Built with care.",
+  "hero": {
+    "greeting": "Hi, I'm",
+    "primaryCtaLabel": "View my work",
+    "secondaryCtaLabel": "Get in touch"
+  },
+  "sections": [
+    {
+      "id": "about",
+      "enabled": true,
+      "navLabel": "About",
+      "eyebrow": "01 — About",
+      "title": "A little about me",
+      "subtitle": ""
+    },
+    {
+      "id": "skills",
+      "enabled": true,
+      "navLabel": "Skills",
+      "eyebrow": "02 — Skills",
+      "title": "What I work with",
+      "subtitle": ""
+    },
+    {
+      "id": "projects",
+      "enabled": true,
+      "navLabel": "Projects",
+      "eyebrow": "03 — Projects",
+      "title": "Selected work",
+      "subtitle": ""
+    },
+    {
+      "id": "experience",
+      "enabled": true,
+      "navLabel": "Experience",
+      "eyebrow": "04 — Experience",
+      "title": "Where I've been",
+      "subtitle": ""
+    },
+    {
+      "id": "contact",
+      "enabled": true,
+      "navLabel": "Contact",
+      "eyebrow": "05 — Contact",
+      "title": "Let's build something together",
+      "subtitle": "Have a project in mind, a role to fill, or just want to say hi? Send a message and I'll get back to you soon."
+    }
+  ],
+  "contact": {
+    "buttonLabel": "Send message",
+    "successMessage": "Thanks! Your message has been received."
+  },
+  "updatedAt": "2026-11-20T18:38:43.286Z"
+}

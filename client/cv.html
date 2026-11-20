@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <!-- The title becomes the default PDF file name; set at runtime to "<Name> - CV" -->
+  <title>CV</title>
+  <link rel="icon" id="favicon" href="assets/img/favicon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/css/variables.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/cv.css">
+  <script type="module" src="assets/js/cv.js"></script>
+</head>
+<body>
+  <main class="container cv-page">
+    <div class="cv-bar no-print">
+      <a class="btn btn--ghost btn--sm" href="/">← Back to site</a>
+      <div class="cv-bar__actions">
+        <span class="muted">Choose <strong>“Save as PDF”</strong> in the print dialog</span>
+        <button class="btn btn--primary btn--sm" id="print-btn" type="button">Download PDF</button>
+      </div>
+    </div>
+    <div id="cv"><p class="muted">Loading CV…</p></div>
+  </main>
+</body>
+</html>

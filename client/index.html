@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Title, description, favicon and colors are all set at runtime from /api/settings + /api/profile -->
+  <title></title>
+  <meta name="description" content="">
+  <link rel="icon" id="favicon" href="assets/img/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/css/variables.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <script type="module" src="assets/js/main.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="navbar" id="navbar">
+    <nav class="container navbar__inner" aria-label="Primary">
+      <a class="brand" id="brand" href="#top"></a>
+      <ul class="navbar__menu" id="nav-menu"></ul>
+      <div class="navbar__actions">
+        <span id="nav-cv" hidden></span>
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme"></button>
+        <button class="icon-btn navbar__toggle" id="nav-toggle" type="button" aria-label="Menu" aria-controls="nav-menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero__glow" aria-hidden="true"></div>
+      <div class="container hero__inner" id="hero-content">
+        <div>
+          <div class="skeleton skeleton--title"></div>
+          <div class="skeleton skeleton--line"></div>
+          <div class="skeleton skeleton--line short"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section order, visibility and headings come from settings.sections -->
+    <section class="section" id="about" data-section>
+      <div class="container">
+        <header class="section__head" data-section-head></header>
+        <div class="about" id="about-content"><div class="skeleton skeleton--block"></div></div>
+      </div>
+    </section>
+
+    <section class="section" id="skills" data-section>
+      <div class="container">
+        <header class="section__head" data-section-head></header>
+        <div class="grid grid--3" id="skills-content"><div class="skeleton skeleton--block"></div></div>
+      </div>
+    </section>
+
+    <section class="section" id="projects" data-section>
+      <div class="container">
+        <header class="section__head" data-section-head></header>
+        <div class="chips" id="project-filters" role="toolbar" aria-label="Filter projects"></div>
+        <div class="grid grid--projects" id="projects-grid" aria-live="polite"><div class="skeleton skeleton--block"></div></div>
+      </div>
+    </section>
+
+    <section class="section" id="experience" data-section>
+      <div class="container">
+        <header class="section__head" data-section-head></header>
+        <div id="experience-content"><div class="skeleton skeleton--block"></div></div>
+      </div>
+    </section>
+
+    <section class="section" id="contact" data-section>
+      <div class="container contact">
+        <div class="contact__intro" data-reveal>
+          <header data-section-head></header>
+          <p><a id="contact-email" class="link" href="#contact"></a></p>
+        </div>
+
+        <form class="card form" id="contact-form" novalidate data-reveal>
+          <div class="form__row">
+            <label class="field">
+              <span>Name</span>
+              <input name="name" autocomplete="name" required maxlength="80">
+              <small class="field__error" data-error-for="name" aria-live="polite"></small>
+            </label>
+            <label class="field">
+              <span>Email</span>
+              <input name="email" type="email" autocomplete="email" required maxlength="120">
+              <small class="field__error" data-error-for="email" aria-live="polite"></small>
+            </label>
+          </div>
+          <label class="field">
+            <span>Subject <em class="muted">(optional)</em></span>
+            <input name="subject" maxlength="120">
+          </label>
+          <label class="field">
+            <span>Message</span>
+            <textarea name="message" rows="5" required maxlength="2000"></textarea>
+            <small class="field__error" data-error-for="message" aria-live="polite"></small>
+          </label>
+          <!-- Honeypot: hidden from humans, bots tend to fill it -->
+          <label class="visually-hidden" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off"></label>
+          <button class="btn btn--primary btn--block" type="submit" id="contact-submit"></button>
+          <p class="form-status" id="form-status" role="status"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner" id="footer-content"></div>
+  </footer>
+</body>
+</html>
