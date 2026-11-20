@@ -1,6 +1,5 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
-import config from '../config/index.js';
+import { fileStore } from '../storage/index.js';
 import { profileService } from './index.js';
 
 /** "Ada Lovelace" → "Ada-Lovelace-CV.pdf" */
@@ -10,7 +9,7 @@ const fileNameFor = (name = '') =>
 export const cvService = {
   /**
    * Works out how to deliver the CV from profile.resumeUrl:
-   *   { type: 'file', filePath, fileName }  – a PDF uploaded through the admin panel
+   *   { type: 'file', data, fileName }      – a PDF uploaded through the admin panel
    *   { type: 'redirect', url }             – an external link or other site path
    *   null                                  – nothing set (frontend uses the generated CV page)
    */
@@ -21,13 +20,8 @@ export const cvService = {
 
     if (url.startsWith('/uploads/')) {
       // basename() prevents path traversal outside the uploads folder
-      const filePath = path.join(config.paths.uploads, path.basename(url));
-      try {
-        await fs.access(filePath);
-        return { type: 'file', filePath, fileName: fileNameFor(profile.name) };
-      } catch {
-        return null; // file was deleted
-      }
+      const file = await fileStore.get(path.basename(url));
+      return file ? { type: 'file', data: file.data, fileName: fileNameFor(profile.name) } : null; // null: file was deleted
     }
     return { type: 'redirect', url };
   },

@@ -1,0 +1,26 @@
+# Render Blueprint — free web service. Data lives in MongoDB Atlas (free), so nothing is lost on restarts.
+# Render → New → Blueprint → pick this repo. You'll be asked for the values marked "sync: false".
+services:
+  - type: web
+    name: farhankit-ai
+    runtime: node
+    plan: free
+    buildCommand: cd server && npm ci --omit=dev
+    startCommand: cd server && npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: MONGODB_URI # mongodb+srv://user:pass@cluster…/farhankit?retryWrites=true&w=majority
+        sync: false
+      - key: ADMIN_USERNAME # creates your admin login on the first start
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: GEMINI_API_KEY # optional, free: https://aistudio.google.com/apikey
+        sync: false

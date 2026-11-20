@@ -7,5 +7,5 @@ export const downloadCv = asyncHandler(async (_req, res) => {
   const cv = await cvService.resolve();
   if (!cv) throw AppError.notFound('No CV file uploaded — use the generated CV page at /cv');
   if (cv.type === 'redirect') return res.redirect(302, cv.url);
-  res.download(cv.filePath, cv.fileName, { headers: { 'Cache-Control': 'no-cache' } });
+  res.attachment(cv.fileName).set('Cache-Control', 'no-cache').type('application/pdf').send(cv.data);
 });

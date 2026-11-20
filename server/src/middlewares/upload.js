@@ -1,8 +1,6 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import multer from 'multer';
-import config from '../config/index.js';
 import AppError from '../utils/AppError.js';
 
 const ALLOWED = {
@@ -16,14 +14,15 @@ const ALLOWED = {
   'application/pdf': '.pdf',
 };
 
-fs.mkdirSync(config.paths.uploads, { recursive: true });
+/** Random, safe file name for an accepted upload. */
+export const uploadName = (mimetype) => `${randomUUID()}${ALLOWED[mimetype]}`;
 
-/** Accepts one image/PDF (max 5 MB) and stores it under a random name. */
+/** MIME type from a stored file name (for serving). */
+export const typeOf = (name) => Object.entries(ALLOWED).find(([, ext]) => name.endsWith(ext))?.[0] ?? 'application/octet-stream';
+
+/** Accepts one image/PDF (max 5 MB) into memory; the controller stores it (disk or MongoDB). */
 export const uploadSingle = multer({
-  storage: multer.diskStorage({
-    destination: config.paths.uploads,
-    filename: (_req, file, cb) => cb(null, `${randomUUID()}${ALLOWED[file.mimetype]}`),
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) =>
     ALLOWED[file.mimetype]

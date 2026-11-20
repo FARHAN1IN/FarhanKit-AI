@@ -4,7 +4,7 @@ import cors from 'cors';
 import config from './config/index.js';
 import apiRoutes from './routes/index.js';
 import { notFound, errorHandler } from './middlewares/errorHandler.js';
-import { uploadHeaders } from './middlewares/upload.js';
+import { serveUpload } from './controllers/upload.controller.js';
 
 /** Builds the Express app (no listening) so it can be reused by tests. */
 export function createApp() {
@@ -31,7 +31,7 @@ export function createApp() {
   app.use('/api', notFound);
 
   // User uploads (logo, avatar, project images, résumé)
-  app.use('/uploads', express.static(config.paths.uploads, { setHeaders: uploadHeaders, maxAge: '7d' }));
+  app.get('/uploads/:name', serveUpload);
 
   // Frontend (static client folder)
   app.use(express.static(config.paths.client, { extensions: ['html'], maxAge: config.env === 'production' ? '1h' : 0 }));

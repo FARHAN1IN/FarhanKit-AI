@@ -63,7 +63,10 @@ const config = Object.freeze({
     password: process.env.ADMIN_PASSWORD ?? '',
   },
   ai: aiConfig(),
+  mongoUri: process.env.MONGODB_URI ?? '',
   paths: {
+    seedData: path.join(serverRoot, 'data'),
+    seedUploads: path.join(serverRoot, 'uploads'),
     data: process.env.DATA_DIR ?? path.join(serverRoot, 'data'),
     uploads: process.env.UPLOADS_DIR ?? path.join(serverRoot, 'uploads'),
     client: path.resolve(serverRoot, '..', 'client'),

@@ -122,3 +122,22 @@ Admin = a valid session cookie from `/api/auth/login`.
 - Login is rate-limited (10 failed attempts / 15 min / IP), and unknown usernames take as long as wrong passwords
 - `/admin` always starts signed out
 - For production: use HTTPS, set a strong `SESSION_SECRET`, and set `NODE_ENV=production`
+
+## Deploy for free (Render + MongoDB Atlas)
+
+Render's free plan wipes the disk on every restart, so online the site stores its data and
+uploaded images in a free MongoDB Atlas database (set `MONGODB_URI`). On first start the database
+is filled with the content committed in `server/data` and `server/uploads`.
+
+1. **MongoDB Atlas** (https://www.mongodb.com/cloud/atlas/register) → create a free **M0** cluster.
+   - *Database Access*: add a user + password.
+   - *Network Access*: allow `0.0.0.0/0` (Render's free plan has no fixed IP).
+   - *Connect → Drivers*: copy the `mongodb+srv://…` string, insert the password and add a database
+     name before `?`, e.g. `…mongodb.net/farhankit?retryWrites=true&w=majority`.
+2. **Render** (https://render.com, sign in with GitHub) → **New → Blueprint** → choose this repo.
+   Fill in `MONGODB_URI`, `ADMIN_USERNAME`, `ADMIN_PASSWORD` (and optionally `GEMINI_API_KEY`).
+3. Open `https://<your-service>.onrender.com` — admin at `/admin`.
+
+Notes: the free instance sleeps after 15 minutes without visitors (the next visit takes ~30–50 s).
+Add more free AI keys (`GROQ_API_KEY`, `OPENROUTER_API_KEY`) under the service's *Environment* tab.
+After the first start you can delete `ADMIN_PASSWORD` there and change the password in admin → Account.
