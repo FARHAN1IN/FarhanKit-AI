@@ -56,6 +56,11 @@ export const api = {
   aiStatus: () => request('/ai/status').then(data),
   aiReview: (cv) => request('/ai/ats-review', { method: 'POST', body: cv }).then(data),
   aiPay: (body) => request('/ai/payments', { method: 'POST', body }).then(data),
+  importCv(file) {
+    const form = new FormData();
+    form.append('file', file);
+    return request('/cv/import', { method: 'POST', body: form }).then(data);
+  },
 };
 
 /** CRUD helpers for an admin-managed collection. */

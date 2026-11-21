@@ -217,3 +217,17 @@
   .cv-page, .cvb, .cvb-preview { width: auto !important; max-width: none !important; display: block !important; position: static !important; max-height: none !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; }
   .cv-sheet, .cvb-preview .cv-sheet { max-width: none; border-radius: 0; box-shadow: none; padding: 14mm 15mm; font-size: 10.5pt; }
 }
+
+/* ---------- Upload an existing CV ---------- */
+.cvb-import {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem;
+  padding: 1rem 1.25rem; border-radius: var(--radius, 14px);
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+.cvb-import__text { display: grid; gap: 0.15rem; flex: 1 1 240px; }
+.cvb-import__text span { font-size: 0.88rem; color: var(--text-muted); }
+.cvb-import__btn { flex-shrink: 0; }
+.cvb-import__msg { flex-basis: 100%; margin: 0; font-size: 0.88rem; }
+.cvb-import__msg.is-ok { color: var(--success); }
+.cvb-import__msg.is-error { color: var(--danger); }

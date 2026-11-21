@@ -79,6 +79,8 @@ export function createCvBuilder(container, { data = emptyCv(), onChange = () => 
   let timer;
   let atsOpen = false; // keeps the "How to improve" list open/closed across live updates
   let fixes = null; // latest suggestions from the improvement model
+  let importBusy = false; // reading an uploaded CV file
+  let importMsg = null; // { kind: 'ok' | 'error', text }
   const ai = {
     available: false, state: 'idle', result: null, error: '', stale: false, reviewedJson: '',
     // billing
@@ -99,6 +101,15 @@ export function createCvBuilder(container, { data = emptyCv(), onChange = () => 
 
   function formMarkup(d) {
     return html`<form class="cvb-form" novalidate autocomplete="on">
+      <section class="cvb-import">
+        <div class="cvb-import__text">
+          <strong>📄 Already have a CV?</strong>
+          <span>Upload it and the form fills itself — PDF, Word (.docx) or text, up to 5 MB.</span>
+        </div>
+        <label class="btn btn--primary btn--sm cvb-import__btn">${importBusy ? 'Reading…' : 'Upload CV'}<input type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" data-import-input hidden${importBusy ? raw(' disabled') : ''}></label>
+        ${importMsg ? html`<p class="cvb-import__msg ${importMsg.kind === 'error' ? 'is-error' : 'is-ok'}">${importMsg.text}</p>` : ''}
+      </section>
+
       ${step(1, 'About you', html`<div class="cvb-grid">
         ${input('name', 'Full name', d.name, { placeholder: 'Jane Doe', max: 80 })}
         ${input('title', 'Job title', d.title, { placeholder: 'Web Developer', max: 100 })}
@@ -387,7 +398,43 @@ export function createCvBuilder(container, { data = emptyCv(), onChange = () => 
     }
   });
 
+  /* ---------- import an existing CV file ---------- */
+  async function importCv(file) {
+    const current = getData();
+    const hasContent = current.name || current.summary || current.experience.length || current.education.length || current.skills.length;
+    if (hasContent && !confirm('Replace what you have typed with the details from your CV file?')) return;
+
+    importBusy = true;
+    importMsg = null;
+    setData(current); // shows "Reading…"
+    try {
+      const { cv, found } = await api.importCv(file);
+      const parts = [
+        found.experience && `${found.experience} job${found.experience > 1 ? 's' : ''}`,
+        found.education && `${found.education} education`,
+        found.projects && `${found.projects} project${found.projects > 1 ? 's' : ''}`,
+        found.skills && `${found.skills} skills`,
+        found.certifications && `${found.certifications} certification${found.certifications > 1 ? 's' : ''}`,
+        found.languages && `${found.languages} language${found.languages > 1 ? 's' : ''}`,
+      ].filter(Boolean);
+      importBusy = false;
+      importMsg = parts.length || cv.name
+        ? { kind: 'ok', text: `✓ Filled from “${file.name}”${parts.length ? `: ${parts.join(', ')}` : ''}. Please check every field — automatic reading isn’t perfect.` }
+        : { kind: 'error', text: 'We couldn’t recognise the sections in this file — please fill the form by hand.' };
+      // keep things the file can't contain: the photo and the target job
+      setData({ ...emptyCv(), ...cv, photo: current.photo, ...(ats && { targetJob: current.targetJob }) });
+      onChange(getData());
+    } catch (err) {
+      importBusy = false;
+      importMsg = { kind: 'error', text: err.message };
+      setData(current);
+    }
+  }
+
   formHost.addEventListener('change', async (e) => {
+    const importInput = e.target.closest('[data-import-input]');
+    if (importInput?.files?.[0]) return importCv(importInput.files[0]);
+
     const fileInput = e.target.closest('[data-photo-input]');
     if (!fileInput?.files?.[0]) return;
     const btn = fileInput.parentElement;

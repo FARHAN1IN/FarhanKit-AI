@@ -429,3 +429,74 @@ test('ai models: admin adds a provider; key is encrypted, never returned; test +
   assert.equal((await call('DELETE', `/api/ai/providers/${id}`, { headers: admin })).status, 204);
   assert.equal((await call('DELETE', `/api/ai/providers/${id}`, { headers: admin })).status, 404);
 });
+
+test('cv import: detects fields from an uploaded CV (txt), rejects bad files, stores nothing', async () => {
+  const text = [
+    'Jane Doe',
+    'Senior QA Engineer',
+    'Berlin, Germany',
+    'jane.doe@example.com | +49 151 2345 6789',
+    'LinkedIn: https://www.linkedin.com/in/jane-doe/',
+    '',
+    'PROFESSIONAL SUMMARY',
+    'QA engineer with 6 years of experience in manual and automated testing.',
+    '',
+    'WORK EXPERIENCE',
+    'Senior QA Engineer',
+    'Acme GmbH | Mar 2021 – Present',
+    '• Built a Playwright test suite covering 300 cases',
+    '• Cut regression time by 40%',
+    'QA Engineer',
+    'Beta Corp | Jan 2018 – Feb 2021',
+    '• Wrote API tests in Postman and',
+    'automated them in CI',
+    '',
+    'Education',
+    'B.Sc. Computer Science',
+    'TU Berlin | 2014 – 2018',
+    '',
+    'Skills',
+    'Testing: Playwright, Selenium, Postman,',
+    'JMeter',
+    'Tools: Jira, Git',
+    '',
+    'Languages: English, German',
+    '',
+    'Certifications',
+    '• ISTQB Foundation Level',
+  ].join('\n');
+
+  const upload = async (content, name, type) => {
+    const form = new FormData();
+    form.append('file', new Blob([content], { type }), name);
+    const res = await fetch(`${base}/api/cv/import`, { method: 'POST', body: form });
+    return { status: res.status, body: await res.json() };
+  };
+
+  const before = await fs.readdir(dataDir);
+  const { status, body } = await upload(text, 'jane.txt', 'text/plain');
+  assert.equal(status, 200);
+  const { cv } = body.data;
+  assert.equal(cv.name, 'Jane Doe');
+  assert.equal(cv.title, 'Senior QA Engineer');
+  assert.equal(cv.email, 'jane.doe@example.com');
+  assert.equal(cv.phone, '+49 151 2345 6789');
+  assert.equal(cv.location, 'Berlin, Germany');
+  assert.deepEqual(cv.links, ['linkedin.com/in/jane-doe']);
+  assert.match(cv.summary, /6 years of experience/);
+  assert.equal(cv.experience.length, 2);
+  assert.deepEqual(
+    { role: cv.experience[0].role, company: cv.experience[0].company, dates: cv.experience[0].dates },
+    { role: 'Senior QA Engineer', company: 'Acme GmbH', dates: 'Mar 2021 – Present' },
+  );
+  assert.equal(cv.experience[1].details, 'Wrote API tests in Postman and automated them in CI'); // wrapped bullet joined
+  assert.deepEqual(cv.education, [{ degree: 'B.Sc. Computer Science', school: 'TU Berlin', year: '2014 – 2018' }]);
+  assert.deepEqual(cv.skills, ['Playwright', 'Selenium', 'Postman', 'JMeter', 'Jira', 'Git']);
+  assert.deepEqual(cv.languages, ['English', 'German']);
+  assert.deepEqual(cv.certifications, ['ISTQB Foundation Level']);
+  assert.deepEqual(await fs.readdir(dataDir), before); // nothing stored
+
+  assert.equal((await upload('x', 'virus.exe', 'application/x-msdownload')).status, 400);
+  assert.equal((await upload('hello', 'short.txt', 'text/plain')).status, 400); // no real text
+  assert.equal((await upload('%PDF-1.4 broken', 'broken.pdf', 'application/pdf')).status, 400);
+});
