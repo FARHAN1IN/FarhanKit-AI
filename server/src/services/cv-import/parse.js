@@ -22,7 +22,18 @@ const SECTION_NAMES = {
 const HEADING = new Map(Object.entries(SECTION_NAMES).flatMap(([section, names]) => names.map((n) => [n, section])));
 
 const normHeading = (line) => line.toLowerCase().replace(/[^a-z& ]+/g, ' ').replace(/\s+/g, ' ').trim();
-const headingOf = (line) => (line.length <= 45 ? HEADING.get(normHeading(line)) ?? null : null);
+const HEADING_COMPACT = new Map([...HEADING].map(([name, section]) => [name.replace(/[^a-z]/g, ''), section]));
+const headingOf = (line) => {
+  if (line.length > 60) return null;
+  const direct = HEADING.get(normHeading(line));
+  if (direct) return direct;
+  // letter-spaced headings like "E X P E R I E N C E"
+  const tokens = line.trim().split(/\s+/);
+  if (tokens.length >= 4 && tokens.filter((t) => t.length <= 2).length >= tokens.length * 0.6) {
+    return HEADING_COMPACT.get(line.toLowerCase().replace(/[^a-z]/g, '')) ?? null;
+  }
+  return null;
+};
 
 /* ---------------- dates ---------------- */
 const MONTH = '(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\.?';
@@ -61,7 +72,14 @@ function normalize(text) {
   const lines = text
     .split('\n')
     // symbol bullets (➢ ✓ ► …) become "• " before decorative icons (📧 📞 …) are removed
-    .map((l) => l.replace(/^\s*[➢➤►▶✓✔◆◇■□]\s*/u, '• ').replace(ICONS, '').replace(/\s+/g, ' ').trim())
+    .map((l) =>
+      l
+        .replace(/^\s*[➢➤►▶✓✔◆◇■□]\s*/u, '• ')
+        .replace(ICONS, '')
+        .replace(/^([●•▪▫◦‣∙·*-]?)\s*\|\s*/u, '$1 ') // "● | text" (gap after the bullet symbol)
+        .replace(/\s+/g, ' ')
+        .trim(),
+    )
     .filter(Boolean);
   const out = [];
   for (const line of lines) {
@@ -76,6 +94,12 @@ function normalize(text) {
 }
 
 /* ---------------- section parsers ---------------- */
+
+/**
+ * Does this plain line continue the previous point (wrapped text) rather than start a new one?
+ * New point only when the previous one ended a sentence and this line starts with a capital.
+ */
+const continues = (prev, line) => !/[.!?]["')]?$/.test(prev.trim()) || /^[\p{Ll}(\d%&]/u.test(line);
 
 /** Experience-like blocks: role line, "Company | dates" line, bullets (and wrapped bullet lines). */
 function parseEntries(lines) {
@@ -115,18 +139,21 @@ function parseEntries(lines) {
     }
     const next = lines[i + 1];
     const nextIsDateLine = next && !isBullet(next) && findDates(next);
-    if (nextIsDateLine) {
+    // A job title above a date line: starts with a capital, short, no full stop — not the
+    // wrapped end of the previous point ("and strengthening overall reliability.").
+    const looksLikeRole = /^[\p{Lu}\d]/u.test(line) && line.length < 90 && !/[.]$/.test(line);
+    if (nextIsDateLine && looksLikeRole) {
       start(line);
       lastBullet = false;
-    } else if (lastBullet && cur?.details.length) {
-      cur.details[cur.details.length - 1] += ` ${line}`; // wrapped bullet
+    } else if (lastBullet && cur?.details.length && continues(cur.details[cur.details.length - 1], line)) {
+      cur.details[cur.details.length - 1] += ` ${line}`; // wrapped point
     } else if (cur && cur.role && !cur.company && !cur.dates && !cur.details.length) {
       cur.company = line;
     } else if (!cur) {
       start(line);
     } else {
-      cur.details.push(line);
-      lastBullet = true; // a following wrapped line continues this one
+      cur.details.push(line); // a point without a bullet character
+      lastBullet = true;
     }
   });
 
@@ -136,7 +163,11 @@ function parseEntries(lines) {
 }
 
 function splitRoleCompany(text) {
-  const m = text.match(/^(.+?)\s+(?:at|@)\s+(.+)$/i) ?? text.match(/^(.+?)\s*[|,]\s*(.+)$/) ?? text.match(/^(.+?)\s+[–—-]\s+(.+)$/);
+  const m =
+    text.match(/^(.+?)\s+(?:at|@)\s+(.+)$/i) ??
+    text.match(/^(.+?)\s*[|·•]\s*(.+)$/) ??
+    text.match(/^(.+?)\s*,\s*(.+)$/) ??
+    text.match(/^(.+?)\s+[–—-]\s+(.+)$/);
   return m ? [cleanSep(m[1]), cleanSep(m[2])] : [text, ''];
 }
 
@@ -169,11 +200,14 @@ function parseProjects(lines) {
       return;
     }
     const next = lines[i + 1];
-    const looksLikeTitle = (!next || isBullet(next)) && !/[.,;:]$/.test(line) && /^[\p{Lu}\d]/u.test(line) && line.length < 100;
+    // A title: short capitalised line, after the previous point is finished, followed by a
+    // bullet or a capitalised line (works with and without bullet characters).
+    const prevDone = !cur || !cur.details.length || !continues(cur.details[cur.details.length - 1], line);
+    const looksLikeTitle = prevDone && !/[.,;:]$/.test(line) && /^[\p{Lu}\d]/u.test(line) && line.length < 100 && (!next || isBullet(next) || /^[\p{Lu}]/u.test(next));
     if (looksLikeTitle || !cur) {
       projects.push((cur = { name: line, details: [] }));
       lastBullet = false;
-    } else if (lastBullet && cur.details.length) {
+    } else if (cur.details.length && continues(cur.details[cur.details.length - 1], line)) {
       cur.details[cur.details.length - 1] += ` ${line}`;
     } else {
       cur.details.push(line);
@@ -278,7 +312,8 @@ export function parseCv(text) {
     sections[current].push(line);
   }
 
-  const contactLines = [...sections.header, ...(sections.contact ?? [])];
+  // header/contact lines split on " | " so "email | phone | City, Country" is read item by item
+  const contactLines = [...sections.header, ...(sections.contact ?? [])].flatMap((l) => l.split(/\s+\|\s+/)).map((l) => l.trim()).filter(Boolean);
   const all = lines.join('\n');
   const email = (contactLines.join(' ').match(EMAIL_RE) ?? all.match(EMAIL_RE) ?? [''])[0].toLowerCase();
   const phone = ([...contactLines.join(' ').matchAll(PHONE_RE)].map((m) => m[0]).find(isPhone) ?? '').trim();

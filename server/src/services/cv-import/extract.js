@@ -66,7 +66,7 @@ async function pdfText(buffer) {
       let end = null;
       for (const p of parts) {
         // a visible gap between pieces → keep a space (or a wide gap → " | ")
-        if (end !== null) line += p.x - end > 40 ? ' | ' : p.x - end > 1 && !line.endsWith(' ') && !p.str.startsWith(' ') ? ' ' : '';
+        if (end !== null) line += p.x - end > 8 ? ' | ' : p.x - end > 1 && !line.endsWith(' ') && !p.str.startsWith(' ') ? ' ' : '';
         line += p.str;
         end = p.x + p.w;
       }
