@@ -605,3 +605,16 @@ test('sessions update live from admin: length change, log out one user, log out 
   s = await settings();
   await call('PUT', '/api/settings', { body: { ...s, accounts: { ...s.accounts, sessionDays: 30 } }, headers: admin });
 });
+
+test('admin uses AI reviews without a visitor account and without credits', async () => {
+  const st = (await call('GET', '/api/ai/status', { headers: admin })).body.data;
+  assert.equal(st.user.admin, true);
+  assert.equal(st.wallet.admin, true);
+  for (let i = 0; i < 5; i++) {
+    const r = await call('POST', '/api/ai/ats-review', { body: SAMPLE_CV, headers: admin });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.data.wallet.admin, true);
+  }
+  // visitors without an account still need one
+  assert.equal((await call('POST', '/api/ai/ats-review', { body: SAMPLE_CV })).status, 401);
+});

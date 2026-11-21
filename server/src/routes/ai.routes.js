@@ -14,6 +14,9 @@ import { publicUser, userService } from '../services/user.service.js';
 
 const router = Router();
 
+/** What the admin sees instead of a balance. */
+const ADMIN_WALLET = { admin: true, freeLeft: 0, freeTotal: 0, credits: 0 };
+
 const limiter = (perHour, message) =>
   rateLimit({
     windowMs: 60 * 60 * 1000,
@@ -40,6 +43,13 @@ const publicPlan = (plan) => ({
 router.get('/status', loadUser, asyncHandler(async (req, res) => {
   if (!(await ai.isAvailable())) return res.json({ success: true, data: { available: false } });
   const plan = await billing.getPlan();
+  if (req.admin) {
+    // Admin (e.g. admin → My CV): unlimited reviews, no visitor account or credits needed
+    return res.json({
+      success: true,
+      data: { available: true, user: { email: req.admin, admin: true }, wallet: ADMIN_WALLET, plan: publicPlan(plan), payments: [] },
+    });
+  }
   const user = req.user;
   res.json({
     success: true,
@@ -64,6 +74,9 @@ router.post(
     if (ai.contentWords(req.body) < ai.MIN_REVIEW_WORDS) {
       throw AppError.badRequest('Your CV is almost empty — add a summary and at least one job, project or education before asking for an AI review.', { code: 'CV_TOO_SHORT' });
     }
+    if (req.admin) {
+      return res.json({ success: true, data: { ...(await ai.reviewCv(req.body)), wallet: ADMIN_WALLET } });
+    }
     const ticket = await billing.reserve(req.user.id); // 402 when nothing is left
     let review;
     try {
@@ -84,6 +97,7 @@ router.post(
   requireUser,
   validateBody(aiPaymentSchema),
   asyncHandler(async (req, res) => {
+    if (!req.user) throw AppError.badRequest('Admins have unlimited AI reviews — no payment needed.');
     const payment = await billing.submitPayment(req.user, req.body);
     res.status(201).json({ success: true, data: { payment, payments: await billing.userPayments(req.user.id) } });
   }),

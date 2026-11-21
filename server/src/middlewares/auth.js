@@ -13,4 +13,13 @@ const requireAdmin = asyncHandler(async (req, _res, next) => {
   next();
 });
 
+/** The signed-in admin's username, or null (never throws). */
+export async function adminFromRequest(req) {
+  try {
+    return await authService.verify(parseCookies(req.get('cookie'))[config.session.cookieName]);
+  } catch {
+    return null;
+  }
+}
+
 export default requireAdmin;

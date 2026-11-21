@@ -52,6 +52,7 @@ const STATUS_LABEL = { pending: '⏳ waiting for approval', approved: '✓ appro
 /** "2 of 3 free reviews left" / "5 paid reviews left" */
 function walletLine(w) {
   if (!w) return '';
+  if (w.admin) return '👑 Admin — unlimited AI reviews, no credits used';
   const parts = [];
   if (w.freeTotal) parts.push(`🎁 ${w.freeLeft} of ${w.freeTotal} free review${w.freeTotal > 1 ? 's' : ''} left`);
   if (w.credits) parts.push(`💳 ${w.credits} paid review${w.credits > 1 ? 's' : ''} left`);
@@ -135,7 +136,7 @@ function renderAi(ai) {
   if (!ai.user) return renderAuth(ai);
   const r = ai.result;
   const w = ai.wallet;
-  const canReview = !w || w.freeLeft > 0 || w.credits > 0;
+  const canReview = !w || w.admin || w.freeLeft > 0 || w.credits > 0;
   const button = (label) => html`<button type="button" class="btn btn--primary btn--sm" data-ai-review${ai.state === 'loading' ? raw(' disabled') : ''}>${label}</button>`;
 
   return html`<div class="ats__ai">
@@ -147,8 +148,8 @@ function renderAi(ai) {
           ? button(r ? 'Review again' : 'Get AI review')
           : html`<button type="button" class="btn btn--primary btn--sm" data-ai-buy>Buy AI reviews</button>`}
     </div>
-    ${w ? html`<p class="ats__wallet">${walletLine(w)}${canReview && !ai.buyOpen ? html` · <button type="button" class="cvb-link ats__apply" data-ai-buy>Buy more</button>` : ''}</p>` : ''}
-    <p class="ats__account">Signed in as <strong>${ai.user.email}</strong> · <button type="button" class="cvb-link ats__apply" data-ai-logout>Log out</button></p>
+    ${w ? html`<p class="ats__wallet">${walletLine(w)}${canReview && !ai.buyOpen && !w.admin ? html` · <button type="button" class="cvb-link ats__apply" data-ai-buy>Buy more</button>` : ''}</p>` : ''}
+    ${ai.user.admin ? '' : html`<p class="ats__account">Signed in as <strong>${ai.user.email}</strong> · <button type="button" class="cvb-link ats__apply" data-ai-logout>Log out</button></p>`}
     ${ai.state === 'error' ? html`<p class="ats__ai-error">${ai.error}</p>` : ''}
     ${ai.buyOpen ? renderBuy(ai) : ''}
     ${renderPayments(ai.payments)}
