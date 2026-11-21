@@ -117,3 +117,31 @@
 .skeleton--line.short { width: 55%; }
 .skeleton--block { height: 220px; }
 @keyframes shimmer { to { background-position: -200% 0; } }
+
+/* Inputs: 16px text so phones (iOS) don't zoom in when a field is focused */
+.field input, .field textarea, .field select { font-size: 1rem; }
+
+/* Touch screens: no hover lift that "sticks" after a tap */
+@media (hover: none) {
+  .btn:hover, .icon-btn:hover, .project:hover { transform: none; }
+}
+
+/* ---------- Phones ---------- */
+@media (max-width: 640px) {
+  .card { padding: var(--space-4) 1.1rem; }
+  .card.project { padding: 0; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+  .stat { flex-direction: column; align-items: flex-start; gap: 0; }
+  .stat__value { font-size: 1.9rem; line-height: 1.2; }
+  .stat__label { font-size: 0.88rem; line-height: 1.3; }
+  .skill-group ul { gap: var(--space-3); }
+  .skill__head { font-size: 0.88rem; gap: var(--space-2); }
+  .project__img { aspect-ratio: 16 / 7; }
+  .project__img--generated span { font-size: 2.25rem; }
+  .project__body { padding: var(--space-4) 1.1rem var(--space-6); }
+  .chips { flex-wrap: nowrap; overflow-x: auto; margin-inline: -0.875rem; padding: 0 0.875rem 0.25rem; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; }
+  .bullets li { font-size: 0.92rem; padding-left: var(--space-4); }
+  .timeline .card h3 { font-size: 1.05rem; }
+}

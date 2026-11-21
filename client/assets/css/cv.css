@@ -40,7 +40,8 @@
 .cv-item__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .cv-item h3 { margin: 0; font-size: 11pt; line-height: 1.35; }
 .cv-date { flex-shrink: 0; font-size: 9.5pt; color: var(--cv-muted); white-space: nowrap; }
-.cv-bullets { margin: 3px 0 0; padding-left: 16px; }
+.cv-bullets { margin: 3px 0 0; padding-left: 16px; list-style: disc; }
+.cv-bullets li::marker { color: var(--cv-muted); }
 .cv-bullets li { margin-bottom: 1px; }
 
 .cv-tags { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; padding: 0; list-style: none; }
@@ -213,6 +214,6 @@
 @media print {
   html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
   .no-print, .navbar, .cvb-form, [data-form], .cvb-preview__label, .cv-bar { display: none !important; }
-  .cv-page, .cvb, .cvb-preview { display: block !important; position: static !important; max-height: none !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; }
+  .cv-page, .cvb, .cvb-preview { width: auto !important; max-width: none !important; display: block !important; position: static !important; max-height: none !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; }
   .cv-sheet, .cvb-preview .cv-sheet { max-width: none; border-radius: 0; box-shadow: none; padding: 14mm 15mm; font-size: 10.5pt; }
 }

@@ -10,6 +10,7 @@ const seedDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'd
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'portfolio-test-'));
 const dataDir = path.join(tmp, 'data');
 await fs.cp(seedDir, dataDir, { recursive: true });
+await fs.rm(path.join(dataDir, 'cv.json'), { force: true }); // tests start without a saved CV
 
 process.env.NODE_ENV = 'test';
 process.env.DATA_DIR = dataDir;
