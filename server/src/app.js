@@ -34,7 +34,8 @@ export function createApp() {
   app.get('/uploads/:name', serveUpload);
 
   // Frontend (static client folder)
-  app.use(express.static(config.paths.client, { extensions: ['html'], maxAge: config.env === 'production' ? '1h' : 0 }));
+  // Always revalidate (ETag → 304) so a new deploy is picked up at once and never mixed with old files.
+  app.use(express.static(config.paths.client, { extensions: ['html'], maxAge: 0, setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache') }));
   app.use(notFound);
 
   app.use(errorHandler);
