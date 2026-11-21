@@ -115,6 +115,10 @@ async function askProvider(p, user, hasJob) {
 
   let res = await send(true);
   if (res.status === 400) res = await send(false); // some free models don't support JSON mode
+  if (res.status === 429 || res.status >= 500) {
+    await new Promise((r) => setTimeout(r, 2500)); // busy for a moment → one retry
+    res = await send(true);
+  }
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
     throw new Error(`HTTP ${res.status} ${detail.slice(0, 200)}`);
@@ -141,7 +145,7 @@ export async function testProvider(p) {
       const body = await res.text().catch(() => '');
       let msg = body;
       try { const j = JSON.parse(body); msg = j.error?.message ?? j[0]?.error?.message ?? j.message ?? body; } catch { /* plain text */ }
-      const hint = res.status === 401 || res.status === 403 ? 'API key is wrong or not allowed' : res.status === 404 ? 'model name or URL is wrong' : res.status === 429 ? 'rate limit / free quota reached' : '';
+      const hint = res.status === 401 || res.status === 403 ? 'API key is wrong or not allowed' : res.status === 404 ? 'model name or URL is wrong' : res.status === 429 ? 'rate limit / free quota reached' : res.status >= 500 ? 'the provider is busy or down right now — your key and model are fine, try again in a few minutes' : '';
       // Providers often name the replacement for a retired model, e.g. "...use models/gemini-3.8-flash..."
       const suggested = String(msg).match(/\buse\s+(?:models\/)?([a-z0-9][\w.:/-]*[a-z0-9])/i)?.[1];
       return {
