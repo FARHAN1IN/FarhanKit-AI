@@ -108,6 +108,12 @@ router.post('/providers/:id/test', requireAdmin, asyncHandler(async (req, res) =
   res.json({ success: true, data: result });
 }));
 
+router.get('/providers/:id/models', requireAdmin, asyncHandler(async (req, res) => {
+  const p = await aiProviderService.getForCall(req.params.id);
+  if (!p) throw AppError.notFound('AI model not found');
+  res.json({ success: true, data: await ai.listModels(p) });
+}));
+
 /* ---------- Admin: approve payments, grant credits ---------- */
 router.get('/payments', requireAdmin, asyncHandler(async (_req, res) => {
   res.json({ success: true, data: await billing.listPayments() });

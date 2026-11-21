@@ -85,6 +85,7 @@ export const adminApi = {
   updateAiProvider: (id, body) => request(`/ai/providers/${enc(id)}`, { method: 'PATCH', body }).then(data),
   deleteAiProvider: (id) => request(`/ai/providers/${enc(id)}`, { method: 'DELETE' }),
   testAiProvider: (id) => request(`/ai/providers/${enc(id)}/test`, { method: 'POST' }).then(data),
+  aiProviderModels: (id) => request(`/ai/providers/${enc(id)}/models`).then(data),
 
   aiPayments: () => request('/ai/payments').then(data),
   decideAiPayment: (id, status) => request(`/ai/payments/${enc(id)}`, { method: 'PATCH', body: { status } }).then(data),

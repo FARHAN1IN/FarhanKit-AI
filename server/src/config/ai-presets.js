@@ -6,7 +6,7 @@ export const AI_PRESETS = {
   gemini: {
     label: 'Google Gemini',
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.8-flash',
     needsKey: true,
     keyUrl: 'https://aistudio.google.com/apikey',
     envKey: 'GEMINI_API_KEY',

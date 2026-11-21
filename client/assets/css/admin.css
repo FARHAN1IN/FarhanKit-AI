@@ -105,3 +105,5 @@ form[data-grant] { margin-bottom: var(--space-6); }
 .ai-test.is-bad { color: var(--danger); }
 .admin-item.is-off { opacity: 0.7; }
 .admin-item h3 .tag { vertical-align: middle; margin-left: var(--space-1); }
+.ai-fix { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+[data-model-picker] select { width: 100%; }

@@ -142,7 +142,14 @@ export async function testProvider(p) {
       let msg = body;
       try { const j = JSON.parse(body); msg = j.error?.message ?? j[0]?.error?.message ?? j.message ?? body; } catch { /* plain text */ }
       const hint = res.status === 401 || res.status === 403 ? 'API key is wrong or not allowed' : res.status === 404 ? 'model name or URL is wrong' : res.status === 429 ? 'rate limit / free quota reached' : '';
-      return { ok: false, ms, error: `HTTP ${res.status}${hint ? ` — ${hint}` : ''}: ${String(msg).slice(0, 160)}` };
+      // Providers often name the replacement for a retired model, e.g. "...use models/gemini-3.8-flash..."
+      const suggested = String(msg).match(/\buse\s+(?:models\/)?([a-z0-9][\w.:/-]*[a-z0-9])/i)?.[1];
+      return {
+        ok: false,
+        ms,
+        error: `HTTP ${res.status}${hint ? ` — ${hint}` : ''}: ${String(msg).slice(0, 160)}`,
+        ...(suggested && suggested !== p.model && { suggestedModel: suggested }),
+      };
     }
     const payload = await res.json().catch(() => ({}));
     if (!payload.choices) return { ok: false, ms, error: 'Unexpected answer — is this an OpenAI-compatible API URL?' };
@@ -150,6 +157,29 @@ export async function testProvider(p) {
   } catch (err) {
     return { ok: false, ms: Date.now() - started, error: err.name === 'TimeoutError' ? 'No answer within 30 s' : `Could not reach ${p.baseUrl} (${err.cause?.code ?? err.message})` };
   }
+}
+
+/**
+ * Models this key can use, from the provider's OpenAI-compatible GET /models.
+ * Chat models only (embedding/image/audio models are left out). Throws AppError on failure.
+ */
+export async function listModels(p) {
+  let res;
+  try {
+    res = await fetch(`${p.baseUrl}/models`, {
+      headers: p.apiKey ? { Authorization: `Bearer ${p.apiKey}` } : {},
+      signal: AbortSignal.timeout(20_000),
+    });
+  } catch (err) {
+    throw new AppError(`Could not reach ${p.baseUrl} (${err.cause?.code ?? err.message})`, 502);
+  }
+  if (!res.ok) throw new AppError(`The provider refused the model list (HTTP ${res.status}).`, 502);
+  const payload = await res.json().catch(() => ({}));
+  const NOT_CHAT = /embed|tts|whisper|transcri|imagen|image-generation|dall-e|moderation|aqa|veo|audio|speech|guard/i;
+  const ids = (payload.data ?? payload.models ?? [])
+    .map((m) => String(m.id ?? m.name ?? '').replace(/^models\//, ''))
+    .filter((id) => id && !NOT_CHAT.test(id));
+  return [...new Set(ids)].sort();
 }
 
 /* ---------- merging several reviews into one ---------- */

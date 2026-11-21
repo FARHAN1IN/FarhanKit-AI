@@ -17,11 +17,47 @@ export const aiModelsView = {
 
     const presetOf = (type) => presets.find((p) => p.type === type) ?? presets[0];
 
-    const testLine = (t) =>
+    const testLine = (t, id) =>
       t
         ? html`<p class="ai-test ${t.ok ? 'is-ok' : 'is-bad'}">${t.ok ? `✓ Working — answered in ${(t.ms / 1000).toFixed(1)} s` : `✕ ${t.error}`}
-            <small>· tested ${fmtDate(t.at)}</small></p>`
+            <small>· tested ${fmtDate(t.at)}</small></p>
+            ${!t.ok && id
+              ? html`<div class="ai-fix">
+                  ${t.suggestedModel ? html`<button class="btn btn--primary btn--sm" type="button" data-use-model="${id}" data-model="${t.suggestedModel}">Use ${t.suggestedModel}</button>` : ''}
+                  ${/HTTP 404|HTTP 400/.test(t.error) ? html`<button class="btn btn--ghost btn--sm" type="button" data-pick-model="${id}">Pick a model from the provider</button>` : ''}
+                </div>`
+              : ''}`
         : '';
+
+    let modelChoices = null; // models loaded from the provider for the edit form
+    let modelsMsg = '';
+
+    /** "Models your key can use": a button, then a dropdown filled from the provider. */
+    const pickerInner = () => html`<span>Models your key can use</span>
+      ${modelChoices?.length
+        ? html`<select data-model-choice>
+            <option value="">— choose a model (${modelChoices.length} found) —</option>
+            ${modelChoices.map((m) => html`<option${m === editing?.model ? raw(' selected') : ''}>${m}</option>`)}
+          </select>`
+        : html`<button class="btn btn--ghost" type="button" data-load-models>Load models from provider</button>`}
+      ${modelsMsg ? html`<small class="muted">${modelsMsg}</small>` : ''}`;
+
+    async function loadModels() {
+      const box = () => root.querySelector('[data-model-picker]');
+      if (!editing || !box()) return;
+      modelsMsg = 'Asking the provider…';
+      mount(box(), pickerInner());
+      try {
+        modelChoices = await ctx.client.aiProviderModels(editing.id);
+        modelsMsg = modelChoices.length
+          ? 'Pick one, then “Save changes”. Names with “flash”, “mini” or “instant” are usually fast and free-tier friendly.'
+          : 'The provider returned no chat models — type the model name above.';
+      } catch (err) {
+        modelChoices = null;
+        modelsMsg = `Couldn’t load models: ${err.message}`;
+      }
+      if (box()) mount(box(), pickerInner());
+    }
 
     const formMarkup = () => {
       const p = editing ?? {};
@@ -54,6 +90,7 @@ export const aiModelsView = {
             <small class="muted">Leave empty for the default${preset?.model ? ` (${preset.model})` : ''}.</small>
             <small class="field__error" data-error-for="model"></small>
           </label>
+          ${editing && editing.source === 'admin' ? html`<div class="field" data-model-picker>${pickerInner()}</div>` : ''}
           <label class="field"${showUrl ? '' : raw(' hidden')} data-url-field><span>API URL <em class="muted">(OpenAI-compatible, ends before /chat/completions)</em></span>
             <input name="baseUrl" maxlength="300" value="${p.baseUrl ?? ''}" placeholder="${preset?.baseUrl || 'https://api.example.com/v1'}">
             <small class="field__error" data-error-for="baseUrl"></small>
@@ -87,7 +124,7 @@ export const aiModelsView = {
                 </div>
               </div>
               ${p.keyProblem ? html`<p class="ai-test is-bad">${p.keyProblem}</p>` : ''}
-              <div data-test-result="${p.id}">${testLine(p.lastTest)}</div>
+              <div data-test-result="${p.id}">${testLine(p.lastTest, p.source === 'admin' ? p.id : null)}</div>
             </article>`,
           )}</div>`
         : html`<p class="empty">No AI models yet — add one above. Gemini and Groq give free keys in a minute.</p>`;
@@ -117,6 +154,10 @@ export const aiModelsView = {
 
     // Provider changed in the "add" form → redraw it with that provider's defaults and hints.
     root.onchange = (e) => {
+      if (e.target.matches('[data-model-choice]')) {
+        if (e.target.value) e.target.form.model.value = e.target.value; // fill the Model field
+        return;
+      }
       if (e.target.name !== 'type' || editing) return;
       newType = e.target.value;
       render();
@@ -158,7 +199,7 @@ export const aiModelsView = {
         const result = await ctx.client.testAiProvider(id);
         const p = providers.find((x) => x.id === id);
         if (p) p.lastTest = result;
-        if (box) mount(box, testLine(result));
+        if (box) mount(box, testLine(result, p?.source === 'admin' ? id : null));
       } catch (err) {
         ctx.handleError(err);
       }
@@ -169,9 +210,21 @@ export const aiModelsView = {
       if (!t) return;
       try {
         if (t.dataset.test) return runTest(t.dataset.test);
-        if (t.dataset.edit) {
-          editing = providers.find((p) => p.id === t.dataset.edit);
+        if (t.dataset.useModel) {
+          // one click: switch to the model the provider suggested, then re-test
+          const p = providers.find((x) => x.id === t.dataset.useModel);
+          await ctx.client.updateAiProvider(p.id, { type: p.type, model: t.dataset.model });
+          await load();
           render();
+          return runTest(p.id);
+        }
+        if (t.hasAttribute('data-load-models')) return loadModels();
+        if (t.dataset.pickModel || t.dataset.edit) {
+          editing = providers.find((p) => p.id === (t.dataset.pickModel || t.dataset.edit));
+          modelChoices = null;
+          modelsMsg = '';
+          render();
+          if (t.dataset.pickModel) await loadModels();
           root.querySelector('[data-provider-form]').scrollIntoView({ behavior: 'smooth', block: 'start' });
           return;
         }

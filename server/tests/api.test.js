@@ -25,6 +25,14 @@ const aiServer = http.createServer((req, res) => {
   req.resume();
   req.on('end', () => {
     if (fakeAi.fail) { res.writeHead(500); return res.end('{}'); }
+    if (req.url.endsWith('/models')) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ data: [{ id: 'models/fake-2-flash' }, { id: 'fake-1' }, { id: 'text-embedding-9' }] }));
+    }
+    if (fakeAi.retired) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify([{ error: { message: 'This model models/fake-1 is no longer available to new users. Please update your code to use models/fake-2-flash for the latest features.' } }]));
+    }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ score: 72, verdict: 'Solid', strengths: ['Clear'], improvements: [], rewrittenSummary: '', rewrittenBullets: [], keywords: { matched: [], missing: [] } }) } }] }));
   });
@@ -378,6 +386,17 @@ test('ai models: admin adds a provider; key is encrypted, never returned; test +
   // Test button
   const t = await call('POST', `/api/ai/providers/${id}/test`, { headers: admin });
   assert.equal(t.body.data.ok, true);
+
+  // Retired model → the provider's suggested replacement is offered
+  fakeAi.retired = true;
+  const retired = (await call('POST', `/api/ai/providers/${id}/test`, { headers: admin })).body.data;
+  fakeAi.retired = false;
+  assert.equal(retired.ok, false);
+  assert.equal(retired.suggestedModel, 'fake-2-flash');
+
+  // Model list from the provider (chat models only, "models/" prefix removed)
+  const models = (await call('GET', `/api/ai/providers/${id}/models`, { headers: admin })).body.data;
+  assert.deepEqual(models, ['fake-1', 'fake-2-flash']);
 
   // reviews now merge env + admin models
   const wallet = { ...json, Cookie: cookieOf(await fetch(`${base}/api/ai/status`)) };
