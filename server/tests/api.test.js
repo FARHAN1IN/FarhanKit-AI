@@ -297,6 +297,14 @@ test('serves the frontend shell', async () => {
   assert.match(await res.text(), /<main id="main">/);
 });
 
+const SAMPLE_CV = {
+  name: 'Jane Doe',
+  title: 'QA Engineer',
+  summary: 'QA engineer with three years of experience in manual and automated testing of web and mobile apps.',
+  experience: [{ role: 'QA Engineer', company: 'Acme', dates: '2022 – 2025', details: 'Wrote and ran regression test suites\nAutomated login tests with Selenium and Java' }],
+  skills: ['Selenium', 'Postman', 'Jira', 'SQL'],
+};
+
 test('ai billing: free reviews, then pay → admin approves → paid credits', async () => {
   const status = await fetch(`${base}/api/ai/status`);
   const wallet = { ...json, Cookie: cookieOf(status) };
@@ -305,7 +313,13 @@ test('ai billing: free reviews, then pay → admin approves → paid credits', a
   assert.equal(st.wallet.freeLeft, 3);
   assert.equal(st.plan.packages.length, 2);
 
-  const review = () => call('POST', '/api/ai/ats-review', { body: { name: 'Jane', summary: 'Dev' }, headers: wallet });
+  // An (almost) empty CV is refused and does NOT use up a free review
+  const empty = await call('POST', '/api/ai/ats-review', { body: { name: 'Jane' }, headers: wallet });
+  assert.equal(empty.status, 400);
+  assert.equal(empty.body.error.details.code, 'CV_TOO_SHORT');
+  assert.equal((await call('GET', '/api/ai/status', { headers: wallet })).body.data.wallet.freeLeft, 3);
+
+  const review = () => call('POST', '/api/ai/ats-review', { body: SAMPLE_CV, headers: wallet });
   for (let i = 2; i >= 0; i--) {
     const r = await review();
     assert.equal(r.status, 200);
@@ -401,7 +415,7 @@ test('ai models: admin adds a provider; key is encrypted, never returned; test +
   // reviews now merge env + admin models
   const wallet = { ...json, Cookie: cookieOf(await fetch(`${base}/api/ai/status`)) };
   await call('POST', '/api/ai/wallets/grant', { body: { code: (await call('GET', '/api/ai/status', { headers: wallet })).body.data.wallet.code, credits: 3 }, headers: admin });
-  const r = await call('POST', '/api/ai/ats-review', { body: { name: 'Jane' }, headers: wallet });
+  const r = await call('POST', '/api/ai/ats-review', { body: SAMPLE_CV, headers: wallet });
   assert.equal(r.status, 200);
   assert.deepEqual(r.body.data.models.map((m) => m.label).sort(), ['My model', 'Ollama (local) (from .env)']);
 
@@ -409,7 +423,7 @@ test('ai models: admin adds a provider; key is encrypted, never returned; test +
   const edited = await call('PATCH', `/api/ai/providers/${id}`, { body: { enabled: false, model: 'fake-2' }, headers: admin });
   assert.equal(edited.body.data.keyHint, '••••1234');
   assert.equal(edited.body.data.enabled, false);
-  const r2 = await call('POST', '/api/ai/ats-review', { body: { name: 'Jane' }, headers: wallet });
+  const r2 = await call('POST', '/api/ai/ats-review', { body: SAMPLE_CV, headers: wallet });
   assert.deepEqual(r2.body.data.models.map((m) => m.label), ['Ollama (local) (from .env)']);
 
   assert.equal((await call('DELETE', `/api/ai/providers/${id}`, { headers: admin })).status, 204);

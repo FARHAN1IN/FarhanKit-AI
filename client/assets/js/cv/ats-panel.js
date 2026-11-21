@@ -133,7 +133,7 @@ function renderAi(ai) {
           <p class="ats__ai-score"><strong>${r.score}</strong>/100 ${r.hasJob ? 'for this job' : 'ATS-readiness'} — ${r.verdict}</p>
           ${r.models?.length
             ? html`<p class="ats__note">${r.models.length > 1 ? `Average of ${r.models.length} AI models` : 'From 1 AI model'}: ${r.models.map((m) => `${m.label} ${m.score}`).join(' · ')}${
-                r.failed?.length ? ` (${r.failed.join(', ')} didn’t answer)` : ''
+                r.failed?.length ? ` (${Object.entries(r.failed.reduce((m, n) => ({ ...m, [n]: (m[n] ?? 0) + 1 }), {})).map(([n, c]) => (c > 1 ? `${c}× ${n}` : n)).join(', ')} didn’t answer)` : ''
               }</p>`
             : ''}
 

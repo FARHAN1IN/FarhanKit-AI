@@ -56,6 +56,10 @@ router.post(
   requireAi,
   validateBody(aiReviewSchema),
   asyncHandler(async (req, res) => {
+    // Nothing to review yet → refuse before any free/paid review is used up
+    if (ai.contentWords(req.body) < ai.MIN_REVIEW_WORDS) {
+      throw AppError.badRequest('Your CV is almost empty — add a summary and at least one job, project or education before asking for an AI review.', { code: 'CV_TOO_SHORT' });
+    }
     const wallet = await billing.getWallet(req, res);
     const ticket = await billing.reserve(wallet.id, req); // 402 when nothing is left
     let review;

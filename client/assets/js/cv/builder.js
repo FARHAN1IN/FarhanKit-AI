@@ -212,8 +212,23 @@ export function createCvBuilder(container, { data = emptyCv(), onChange = () => 
   /** What is sent for the AI review — no photo. */
   const forAi = ({ photo: _photo, ...cv }) => cv;
 
+  /** Same rule as the server: enough real content to review (name/contact line not counted). */
+  function enoughForAi(cv) {
+    const text = [
+      cv.title, cv.summary, ...(cv.skills ?? []), ...(cv.languages ?? []), ...(cv.certifications ?? []),
+      ...(cv.experience ?? []).flatMap((e) => [e.role, e.company, e.dates, e.details]),
+      ...(cv.education ?? []).flatMap((e) => [e.degree, e.school, e.year]),
+      ...(cv.projects ?? []).flatMap((p) => [p.name, p.details]),
+    ].filter(Boolean).join(' ');
+    return text.split(/\s+/).filter((w) => /[a-z0-9]/i.test(w)).length >= 30;
+  }
+
   async function runAiReview() {
     const cv = forAi(getData());
+    if (!enoughForAi(cv)) {
+      Object.assign(ai, { state: 'error', error: 'Your CV is almost empty — fill in a summary and at least one job, project or education first. (No review was used.)' });
+      return renderPreview();
+    }
     ai.state = 'loading';
     ai.error = '';
     renderPreview();
@@ -225,7 +240,7 @@ export function createCvBuilder(container, { data = emptyCv(), onChange = () => 
       ai.state = 'done';
     } catch (err) {
       ai.state = 'error';
-      ai.error = err.status === 400 ? 'Some fields are too long for the AI review — shorten them and try again.' : err.message;
+      ai.error = err.status === 400 && err.details?.code !== 'CV_TOO_SHORT' ? 'Some fields are too long for the AI review — shorten them and try again.' : err.message;
       if (err.status === 402) {
         ai.buyOpen = true; // out of reviews → show the buy form
         if (ai.wallet) Object.assign(ai.wallet, { freeLeft: 0, credits: 0 });
@@ -344,6 +359,8 @@ export function createCvBuilder(container, { data = emptyCv(), onChange = () => 
 
   function setData(d = emptyCv()) {
     photo = d.photo ?? '';
+    // new/cleared CV → an old AI review no longer applies
+    Object.assign(ai, { result: null, state: 'idle', error: '', stale: false, reviewedJson: '' });
     mount(formHost, formMarkup({ ...emptyCv(), ...d }));
     showPhoto();
     renderPreview();
