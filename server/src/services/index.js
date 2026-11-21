@@ -7,6 +7,7 @@ import {
 } from '../repositories/index.js';
 import { createCollectionService, createDocumentService, byOrder } from './factory.js';
 import { SECTION_IDS } from '../validators/index.js';
+import config from '../config/index.js';
 
 /** Defaults guarantee the frontend always receives a complete settings object. */
 export const SETTINGS_DEFAULTS = {
@@ -18,6 +19,8 @@ export const SETTINGS_DEFAULTS = {
   footerText: '© {year} {name}. All rights reserved.',
   hero: { greeting: "Hi, I'm", primaryCtaLabel: 'View my work', secondaryCtaLabel: 'Get in touch' },
   cv: { enabled: true, label: 'Download CV', showInNav: true, makerEnabled: true, makerLabel: 'CV Maker', aiEnabled: true },
+  // Login lengths (admin → Settings → Sessions)
+  accounts: { sessionDays: 30, adminSessionHours: Math.round(config.session.ttlMs / 3600000) || 2 },
   aiPlan: {
     freeReviews: 3,
     currency: 'USD',
@@ -51,6 +54,7 @@ export const settingsService = {
       cv: { ...SETTINGS_DEFAULTS.cv, ...s.cv },
       contact: { ...SETTINGS_DEFAULTS.contact, ...s.contact },
       aiPlan: { ...SETTINGS_DEFAULTS.aiPlan, ...s.aiPlan },
+      accounts: { ...SETTINGS_DEFAULTS.accounts, ...s.accounts },
       sections: [...stored, ...missing],
     };
   },

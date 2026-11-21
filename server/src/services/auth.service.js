@@ -1,6 +1,7 @@
 import { createHmac, createHash, timingSafeEqual } from 'node:crypto';
 import config from '../config/index.js';
 import { adminRepository } from '../repositories/index.js';
+import { settingsService } from './index.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import AppError from '../utils/AppError.js';
 
@@ -19,8 +20,14 @@ const versionOf = (account) => createHash('sha256').update(`${account.username}:
 // A dummy hash so failed logins for unknown users take as long as real ones.
 const DUMMY_HASH = await hashPassword('dummy-password-for-timing');
 
-function issueToken(account) {
-  const payload = b64(JSON.stringify({ sub: account.username, v: versionOf(account), exp: Date.now() + config.session.ttlMs }));
+/** Admin login length: admin → Settings → Sessions (falls back to SESSION_TTL_HOURS). */
+async function adminSessionMs() {
+  const hours = Number((await settingsService.get()).accounts?.adminSessionHours);
+  return hours > 0 ? Math.min(720, hours) * 60 * 60 * 1000 : config.session.ttlMs;
+}
+
+async function issueToken(account) {
+  const payload = b64(JSON.stringify({ sub: account.username, v: versionOf(account), exp: Date.now() + (await adminSessionMs()) }));
   return `${payload}.${b64(sign(payload))}`;
 }
 
@@ -56,7 +63,7 @@ export const authService = {
     const passOk = await verifyPassword(password, userOk ? account.passwordHash : DUMMY_HASH);
     if (!userOk || !passOk) throw AppError.unauthorized('Incorrect username or password');
 
-    return { token: issueToken(account), username: account.username };
+    return { token: await issueToken(account), username: account.username };
   },
 
   /** Returns the username for a valid token, or null. */
@@ -91,6 +98,6 @@ export const authService = {
       updatedAt: new Date().toISOString(),
     };
     await adminRepository.saveDocument(next);
-    return { token: issueToken(next), username: next.username };
+    return { token: await issueToken(next), username: next.username };
   },
 };

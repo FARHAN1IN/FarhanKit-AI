@@ -87,13 +87,16 @@ export function createCvBuilder(container, { data = emptyCv(), onChange = () => 
     wallet: null, plan: null, payments: [],
     buyOpen: false, buyState: 'idle', buyMsg: '', buyMsgKind: '',
     buyForm: { packageIndex: 0, method: '', transactionId: '', sender: '' },
+    // account (AI reviews need one)
+    user: null,
+    auth: { mode: 'signup', busy: false, msg: '', form: { name: '', email: '', password: '' } },
   };
 
   /** Loads AI availability, the visitor's balance, price plan and payments. */
   async function loadAiStatus() {
     try {
       const s = await api.aiStatus();
-      Object.assign(ai, { available: s.available, wallet: s.wallet ?? null, plan: s.plan ?? null, payments: s.payments ?? [] });
+      Object.assign(ai, { available: s.available, user: s.user ?? null, wallet: s.wallet ?? null, plan: s.plan ?? null, payments: s.payments ?? [] });
       if (ai.plan?.methods?.length && !ai.buyForm.method) ai.buyForm.method = ai.plan.methods[0].name;
       renderPreview();
     } catch { /* AI is optional */ }
@@ -256,7 +259,36 @@ export function createCvBuilder(container, { data = emptyCv(), onChange = () => 
         ai.buyOpen = true; // out of reviews → show the buy form
         if (ai.wallet) Object.assign(ai.wallet, { freeLeft: 0, credits: 0 });
       }
+      if (err.status === 401) Object.assign(ai, { user: null, wallet: null, state: 'idle' }); // session ended → sign-in box
     }
+    renderPreview();
+  }
+
+  /** Create account / log in, then reload the AI status (balance, payments). */
+  async function submitAuth() {
+    const a = ai.auth;
+    const { name, email, password } = a.form;
+    if (!email.trim() || !password) {
+      a.msg = 'Please enter your email and password.';
+      return renderPreview();
+    }
+    if (a.mode === 'signup' && password.length < 8) {
+      a.msg = 'Password must be at least 8 characters.';
+      return renderPreview();
+    }
+    Object.assign(a, { busy: true, msg: '' });
+    renderPreview();
+    try {
+      if (a.mode === 'signup') await api.accountSignup({ name: name.trim(), email: email.trim(), password });
+      else await api.accountLogin({ email: email.trim(), password });
+      a.form = { name: '', email: '', password: '' };
+      Object.assign(ai, { error: '', state: 'idle' });
+      await loadAiStatus();
+    } catch (err) {
+      a.msg = err.details?.email || err.details?.password || err.message;
+      if (err.status === 409) a.mode = 'login'; // already registered → switch to log in
+    }
+    a.busy = false;
     renderPreview();
   }
 
@@ -326,6 +358,18 @@ export function createCvBuilder(container, { data = emptyCv(), onChange = () => 
         return renderPreview();
       }
       if (e.target.closest('[data-ai-refresh]')) return loadAiStatus();
+      if (e.target.closest('[data-ai-auth-switch]')) {
+        Object.assign(ai.auth, { mode: ai.auth.mode === 'signup' ? 'login' : 'signup', msg: '' });
+        return renderPreview();
+      }
+      if (e.target.closest('[data-ai-logout]')) {
+        api.accountLogout().catch(() => {}).finally(() => {
+          Object.assign(ai, { user: null, wallet: null, payments: [], result: null, buyOpen: false, state: 'idle', error: '' });
+          ai.auth = { ...ai.auth, mode: 'login', form: { name: '', email: '', password: '' }, msg: '' };
+          renderPreview();
+        });
+        return;
+      }
       if (e.target.closest('[data-ai-summary]') && ai.result) {
         topField('summary').value = ai.result.rewrittenSummary;
         return changed();
@@ -458,11 +502,17 @@ export function createCvBuilder(container, { data = emptyCv(), onChange = () => 
     // Buy form: keep typed values in state (the panel re-renders while the CV is edited).
     atsHost.addEventListener('input', (e) => {
       if (e.target.closest('[data-ai-buy-form]') && e.target.name in ai.buyForm) ai.buyForm[e.target.name] = e.target.value;
+      if (e.target.closest('[data-ai-auth-form]') && e.target.name in ai.auth.form) ai.auth.form[e.target.name] = e.target.value;
     });
     atsHost.addEventListener('change', (e) => {
       if (e.target.closest('[data-ai-buy-form]') && e.target.name in ai.buyForm) ai.buyForm[e.target.name] = e.target.value;
+      if (e.target.closest('[data-ai-auth-form]') && e.target.name in ai.auth.form) ai.auth.form[e.target.name] = e.target.value;
     });
     atsHost.addEventListener('submit', (e) => {
+      if (e.target.matches('[data-ai-auth-form]')) {
+        e.preventDefault();
+        return submitAuth();
+      }
       if (!e.target.matches('[data-ai-buy-form]')) return;
       e.preventDefault();
       submitPayment(e.target);

@@ -1,22 +1,14 @@
 /**
- * AI review billing: free reviews per visitor + paid credits bought by manual payment.
+ * AI review billing per ACCOUNT: each signed-up visitor gets the free reviews set in admin,
+ * then buys packages by manual payment (bank / mobile wallet) that the admin approves.
  *
- * Visitors have no account. Each browser gets a "wallet" (random id in an HttpOnly cookie)
- * holding { freeUsed, credits, code }. Free reviews are also capped per IP address so
- * clearing the browser can't reset them forever.
- *
- * Paying: visitor picks a package, pays you outside the site (bank / mobile wallet),
- * submits the transaction id → payment is "pending" → admin approves → credits are added.
+ * Tied to the account (not the browser), so incognito windows, VPNs or other devices don't
+ * reset free reviews — and paid credits follow the person everywhere.
  */
-import { createHash, randomBytes } from 'node:crypto';
-import config from '../config/index.js';
 import AppError from '../utils/AppError.js';
-import { parseCookies } from '../utils/cookies.js';
-import { aiWalletRepository, aiPaymentRepository, aiIpUsageRepository } from '../repositories/index.js';
+import { userRepository, aiPaymentRepository } from '../repositories/index.js';
 import { settingsService } from './index.js';
-
-export const WALLET_COOKIE = 'cv_ai_wallet';
-const IP_FACTOR = 2; // an IP (home/office network) may use up to 2× the free reviews
+import { canonicalEmail } from './user.service.js';
 
 /* Serialize read-modify-write operations so parallel requests can't double-spend. */
 let lock = Promise.resolve();
@@ -26,78 +18,47 @@ const exclusive = (fn) => {
   return run;
 };
 
-const ipKey = (req) => createHash('sha256').update(`${req.ip}|${config.session.secret}`).digest('hex').slice(0, 32);
-const newCode = () => randomBytes(5).toString('hex').toUpperCase().slice(0, 8);
-
 export async function getPlan() {
   return (await settingsService.get()).aiPlan;
 }
 
-/** Finds the visitor's wallet from the cookie, or creates one (and sets the cookie). */
-export async function getWallet(req, res) {
-  const id = parseCookies(req.headers.cookie)[WALLET_COOKIE];
-  const existing = id && (await aiWalletRepository.findById(id));
-  if (existing) return existing;
-
-  const wallet = await aiWalletRepository.create({ code: newCode(), freeUsed: 0, credits: 0 });
-  res.cookie(WALLET_COOKIE, wallet.id, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: config.env === 'production',
-    path: '/api',
-    maxAge: 365 * 24 * 60 * 60 * 1000,
-  });
-  return wallet;
-}
-
-async function ipUsed(req) {
-  return (await aiIpUsageRepository.getDocument())[ipKey(req)] ?? 0;
-}
-
-async function bumpIp(req, delta) {
-  const doc = await aiIpUsageRepository.getDocument();
-  const k = ipKey(req);
-  doc[k] = Math.max(0, (doc[k] ?? 0) + delta);
-  await aiIpUsageRepository.saveDocument(doc);
-}
-
-/** What the visitor can still use. */
-export async function balance(wallet, req, plan) {
+/** What the signed-in visitor can still use. */
+export async function balance(user, plan) {
   plan ??= await getPlan();
-  const free = Math.max(0, Math.min(plan.freeReviews - wallet.freeUsed, plan.freeReviews * IP_FACTOR - (await ipUsed(req))));
-  return { code: wallet.code, freeLeft: free, freeTotal: plan.freeReviews, credits: wallet.credits };
+  return {
+    email: user.email,
+    freeLeft: Math.max(0, plan.freeReviews - (user.freeUsed ?? 0)),
+    freeTotal: plan.freeReviews,
+    credits: user.credits ?? 0,
+  };
 }
 
-/** Takes one review from the wallet (free first, then paid). Returns a ticket for refund(). */
-export function reserve(walletId, req) {
+/** Takes one review from the account (free first, then paid). Returns a ticket for refund(). */
+export function reserve(userId) {
   return exclusive(async () => {
     const plan = await getPlan();
-    const wallet = await aiWalletRepository.findById(walletId);
-    const { freeLeft } = await balance(wallet, req, plan);
+    const user = await userRepository.findById(userId);
+    if (!user) throw new AppError('Please log in again.', 401, { code: 'LOGIN_REQUIRED' });
+    const { freeLeft } = await balance(user, plan);
     if (freeLeft > 0) {
-      await aiWalletRepository.update(wallet.id, { freeUsed: wallet.freeUsed + 1 });
-      await bumpIp(req, 1);
-      return { walletId, kind: 'free' };
+      await userRepository.update(user.id, { freeUsed: (user.freeUsed ?? 0) + 1 });
+      return { userId, kind: 'free' };
     }
-    if (wallet.credits > 0) {
-      await aiWalletRepository.update(wallet.id, { credits: wallet.credits - 1 });
-      return { walletId, kind: 'paid' };
+    if ((user.credits ?? 0) > 0) {
+      await userRepository.update(user.id, { credits: user.credits - 1 });
+      return { userId, kind: 'paid' };
     }
     throw new AppError('You have used all your free AI reviews. Buy more reviews to continue.', 402, { code: 'NO_CREDITS' });
   });
 }
 
 /** Gives the review back if the AI call failed. */
-export function refund(ticket, req) {
+export function refund(ticket) {
   return exclusive(async () => {
-    const wallet = await aiWalletRepository.findById(ticket.walletId);
-    if (!wallet) return;
-    if (ticket.kind === 'free') {
-      await aiWalletRepository.update(wallet.id, { freeUsed: Math.max(0, wallet.freeUsed - 1) });
-      await bumpIp(req, -1);
-    } else {
-      await aiWalletRepository.update(wallet.id, { credits: wallet.credits + 1 });
-    }
+    const user = await userRepository.findById(ticket.userId);
+    if (!user) return;
+    if (ticket.kind === 'free') await userRepository.update(user.id, { freeUsed: Math.max(0, (user.freeUsed ?? 0) - 1) });
+    else await userRepository.update(user.id, { credits: (user.credits ?? 0) + 1 });
   });
 }
 
@@ -108,22 +69,22 @@ const publicPayment = (p) => ({
   method: p.method, transactionId: p.transactionId, status: p.status, createdAt: p.createdAt,
 });
 
-export async function walletPayments(walletId) {
+export async function userPayments(userId) {
   return (await aiPaymentRepository.findAll())
-    .filter((p) => p.walletId === walletId)
+    .filter((p) => p.userId === userId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 5)
     .map(publicPayment);
 }
 
-export async function submitPayment(wallet, { packageIndex, method, transactionId, sender }) {
+export async function submitPayment(user, { packageIndex, method, transactionId, sender }) {
   const plan = await getPlan();
   const pkg = plan.packages[packageIndex];
   if (!pkg) throw AppError.badRequest('Please choose a package.');
   if (plan.methods.length && !plan.methods.some((m) => m.name === method)) throw AppError.badRequest('Please choose a payment method.');
 
   const all = await aiPaymentRepository.findAll();
-  if (all.filter((p) => p.walletId === wallet.id && p.status === 'pending').length >= 3) {
+  if (all.filter((p) => p.userId === user.id && p.status === 'pending').length >= 3) {
     throw new AppError('You already have 3 payments waiting for approval — please wait until they are checked.', 429);
   }
   const tx = transactionId.trim();
@@ -132,8 +93,8 @@ export async function submitPayment(wallet, { packageIndex, method, transactionI
   }
 
   const payment = await aiPaymentRepository.create({
-    walletId: wallet.id,
-    walletCode: wallet.code,
+    userId: user.id,
+    userEmail: user.email,
     packageName: pkg.name,
     credits: pkg.credits,
     price: pkg.price,
@@ -161,20 +122,27 @@ export function decidePayment(id, status) {
     if (!payment) throw AppError.notFound('Payment not found');
     if (payment.status !== 'pending') throw AppError.badRequest(`This payment was already ${payment.status}.`);
     if (status === 'approved') {
-      const wallet = await aiWalletRepository.findById(payment.walletId);
-      if (!wallet) throw AppError.notFound('The visitor’s wallet no longer exists.');
-      await aiWalletRepository.update(wallet.id, { credits: wallet.credits + payment.credits });
+      const user = payment.userId && (await userRepository.findById(payment.userId));
+      if (!user) throw AppError.notFound('This payment is not linked to an existing account — add the reviews with “Give reviews by email”.');
+      await userRepository.update(user.id, { credits: (user.credits ?? 0) + payment.credits });
     }
     return aiPaymentRepository.update(id, { status, decidedAt: new Date().toISOString() });
   });
 }
 
-/** Adds (or removes, with a negative number) credits by wallet code — for payments agreed outside the site. */
-export function grantCredits(code, credits) {
+/** Adds (or removes, with a negative number) reviews by account email — for payments agreed outside the site. */
+export function grantCredits(email, credits) {
   return exclusive(async () => {
-    const wallet = (await aiWalletRepository.findAll()).find((w) => w.code === code.trim().toUpperCase());
-    if (!wallet) throw AppError.notFound('No visitor with that wallet code.');
-    const updated = await aiWalletRepository.update(wallet.id, { credits: Math.max(0, wallet.credits + credits) });
-    return { code: updated.code, credits: updated.credits, freeUsed: updated.freeUsed };
+    const canonical = canonicalEmail(email);
+    const user = (await userRepository.findAll()).find((u) => u.canonicalEmail === canonical);
+    if (!user) throw AppError.notFound('No account with that email.');
+    const updated = await userRepository.update(user.id, { credits: Math.max(0, (user.credits ?? 0) + credits) });
+    return { email: updated.email, credits: updated.credits, freeUsed: updated.freeUsed };
   });
+}
+
+/** Small overview for the admin. */
+export async function accountStats() {
+  const users = await userRepository.findAll();
+  return { accounts: users.length, withCredits: users.filter((u) => (u.credits ?? 0) > 0).length };
 }

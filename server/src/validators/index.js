@@ -138,6 +138,17 @@ export const aiReviewSchema = Object.fromEntries(
   Object.entries(cvDataSchema).filter(([k]) => k !== 'photo').map(([k, v]) => [k, k === 'name' ? str(80) : k === 'email' ? str(120) : v]),
 );
 
+/* ---------- Visitor accounts (AI reviews) ---------- */
+export const userSignupSchema = {
+  name: str(60),
+  email: str(120, { required: true, pattern: patterns.EMAIL, message: 'Please enter a valid email address' }),
+  password: { type: 'string', required: true, min: 8, max: 200, message: 'Password must be at least 8 characters' },
+};
+export const userLoginSchema = {
+  email: str(120, { required: true }),
+  password: { type: 'string', required: true, max: 200 },
+};
+
 /* ---------- AI review payments ---------- */
 export const aiPaymentSchema = {
   packageIndex: { type: 'number', required: true, min: 0, max: 20 },
@@ -147,7 +158,7 @@ export const aiPaymentSchema = {
 };
 export const aiDecisionSchema = { status: str(10, { required: true, enum: ['approved', 'rejected'] }) };
 export const aiGrantSchema = {
-  code: str(12, { required: true, min: 4 }),
+  email: str(120, { required: true, pattern: patterns.EMAIL, message: 'email is invalid' }),
   credits: { type: 'number', required: true, min: -1000, max: 1000 },
 };
 
@@ -186,6 +197,13 @@ export const settingsSchema = {
       makerEnabled: { type: 'boolean' },
       makerLabel: str(40),
       aiEnabled: { type: 'boolean' },
+    },
+  },
+  accounts: {
+    type: 'object',
+    schema: {
+      sessionDays: { type: 'number', min: 1, max: 365 },
+      adminSessionHours: { type: 'number', min: 1, max: 720 },
     },
   },
   aiPlan: {

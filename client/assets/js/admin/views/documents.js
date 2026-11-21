@@ -183,6 +183,21 @@ export const settingsView = documentView({
           ],
         },
         {
+          name: 'accounts',
+          label: 'Sessions (how long people stay logged in)',
+          type: 'group',
+          fields: [
+            { name: 'sessionDays', label: 'Visitor accounts — days', type: 'number', min: 1, max: 365, placeholder: '30' },
+            { name: 'adminSessionHours', label: 'Admin login — hours', type: 'number', min: 1, max: 720, placeholder: '2' },
+            {
+              name: '_help5',
+              type: 'note',
+              wide: true,
+              text: 'Applies to the next login. Visitors use their account for AI reviews (free reviews and bought reviews are kept on the account, so incognito or a VPN does not give extra free reviews).',
+            },
+          ],
+        },
+        {
           name: 'aiPlan',
           label: 'AI review — free & paid',
           type: 'group',

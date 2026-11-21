@@ -15,6 +15,7 @@ import authRoutes from './auth.routes.js';
 import { downloadCv } from '../controllers/cv.controller.js';
 import aiRoutes from './ai.routes.js';
 import cvImportRoutes from './cv-import.routes.js';
+import accountRoutes from './account.routes.js';
 
 const router = Router();
 
@@ -31,6 +32,7 @@ router.use('/uploads', uploadRoutes);
 router.get('/cv', downloadCv); // uploaded PDF download
 router.use('/cv/data', documentRouter(cvDataController, cvDataSchema)); // CV builder data
 router.use('/cv/import', cvImportRoutes); // upload a CV file → detected fields (not stored)
+router.use('/account', accountRoutes); // visitor accounts (AI reviews)
 router.use('/ai', aiRoutes); // AI ATS review (admin-managed AI models)
 
 export default router;

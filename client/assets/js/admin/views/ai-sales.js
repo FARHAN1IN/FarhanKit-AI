@@ -12,7 +12,7 @@ export const aiSalesView = {
 
   async render(root, ctx) {
     const load = async () => {
-      const payments = await ctx.client.aiPayments();
+      const [payments, stats] = await Promise.all([ctx.client.aiPayments(), ctx.client.aiAccountStats().catch(() => null)]);
       const pending = payments.filter((p) => p.status === 'pending');
       const totals = {};
       payments.filter((p) => p.status === 'approved').forEach((p) => { totals[p.currency] = (totals[p.currency] ?? 0) + Number(p.price); });
@@ -21,20 +21,20 @@ export const aiSalesView = {
         <div class="cv-bar">
           <div>
             <h2>AI sales</h2>
-            <p>${pending.length} payment${pending.length === 1 ? '' : 's'} waiting · earned ${
+            <p>${stats ? `${stats.accounts} visitor account${stats.accounts === 1 ? '' : 's'} · ` : ''}${pending.length} payment${pending.length === 1 ? '' : 's'} waiting · earned ${
               Object.entries(totals).map(([c, v]) => `${v.toLocaleString()} ${c}`).join(' + ') || '0'
             }</p>
           </div>
         </div>
 
         <form class="card form" data-grant>
-          <h3>Give credits by code</h3>
-          <p class="muted">Every visitor sees their code under the AI review. Use a negative number to remove credits.</p>
+          <h3>Give AI reviews by email</h3>
+          <p class="muted">Visitors use the AI review with their account. Enter their account email — use a negative number to remove reviews.</p>
           <div class="form__grid">
-            <label class="field"><span>Visitor code</span><input name="code" maxlength="12" required placeholder="A1B2C3D4"></label>
+            <label class="field"><span>Account email</span><input name="email" type="email" maxlength="120" required placeholder="visitor@email.com"></label>
             <label class="field"><span>AI reviews</span><input name="credits" type="number" min="-1000" max="1000" value="5" required></label>
           </div>
-          <div class="form__actions"><button class="btn btn--primary btn--sm" type="submit">Add credits</button> <span class="form-status"></span></div>
+          <div class="form__actions"><button class="btn btn--primary btn--sm" type="submit">Add reviews</button> <span class="form-status"></span></div>
         </form>
 
         ${payments.length
@@ -54,7 +54,7 @@ export const aiSalesView = {
                 </div>
                 <p><strong>Transaction ID:</strong> ${p.transactionId}${p.method ? html` · <strong>Method:</strong> ${p.method}` : ''}${
                   p.sender ? html` · <strong>From:</strong> ${p.sender}` : ''
-                } · <strong>Visitor code:</strong> ${p.walletCode}</p>
+                } · <strong>Account:</strong> ${p.userEmail ?? `old visitor code ${p.walletCode ?? '–'}`}</p>
               </article>`,
             )}</div>`
           : html`<p class="empty">No payments yet. Set prices under Settings → AI review — free &amp; paid.</p>`}
@@ -80,9 +80,9 @@ export const aiSalesView = {
       const form = e.target;
       const status = form.querySelector('.form-status');
       try {
-        const w = await ctx.client.grantAiCredits(form.code.value, Number(form.credits.value));
-        setStatus(status, 'success', `Done — ${w.code} now has ${w.credits} paid reviews.`);
-        form.code.value = '';
+        const w = await ctx.client.grantAiCredits(form.email.value.trim(), Number(form.credits.value));
+        setStatus(status, 'success', `Done — ${w.email} now has ${w.credits} paid reviews.`);
+        form.email.value = '';
       } catch (err) {
         setStatus(status, 'error', err.message);
       }

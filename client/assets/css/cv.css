@@ -231,3 +231,7 @@
 .cvb-import__msg { flex-basis: 100%; margin: 0; font-size: 0.88rem; }
 .cvb-import__msg.is-ok { color: var(--success); }
 .cvb-import__msg.is-error { color: var(--danger); }
+
+/* AI review: sign-up / log-in */
+.ats__auth { display: grid; gap: 0.6rem; padding: 0.75rem; border-radius: var(--radius-sm, 8px); background: var(--surface); border: 1px solid var(--border); }
+.ats__account { margin: 0; font-size: 0.8rem; color: var(--text-muted); overflow-wrap: anywhere; }

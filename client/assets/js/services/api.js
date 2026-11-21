@@ -56,6 +56,9 @@ export const api = {
   aiStatus: () => request('/ai/status').then(data),
   aiReview: (cv) => request('/ai/ats-review', { method: 'POST', body: cv }).then(data),
   aiPay: (body) => request('/ai/payments', { method: 'POST', body }).then(data),
+  accountSignup: (body) => request('/account/signup', { method: 'POST', body }).then(data),
+  accountLogin: (body) => request('/account/login', { method: 'POST', body }).then(data),
+  accountLogout: () => request('/account/logout', { method: 'POST' }),
   importCv(file) {
     const form = new FormData();
     form.append('file', file);
@@ -94,7 +97,8 @@ export const adminApi = {
 
   aiPayments: () => request('/ai/payments').then(data),
   decideAiPayment: (id, status) => request(`/ai/payments/${enc(id)}`, { method: 'PATCH', body: { status } }).then(data),
-  grantAiCredits: (code, credits) => request('/ai/wallets/grant', { method: 'POST', body: { code, credits } }).then(data),
+  grantAiCredits: (email, credits) => request('/ai/accounts/grant', { method: 'POST', body: { email, credits } }).then(data),
+  aiAccountStats: () => request('/ai/accounts/stats').then(data),
 
   projects: collection('/projects'),
   skills: collection('/skills'),

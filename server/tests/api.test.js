@@ -305,11 +305,48 @@ const SAMPLE_CV = {
   skills: ['Selenium', 'Postman', 'Jira', 'SQL'],
 };
 
-test('ai billing: free reviews, then pay → admin approves → paid credits', async () => {
-  const status = await fetch(`${base}/api/ai/status`);
-  const wallet = { ...json, Cookie: cookieOf(status) };
-  const st = (await status.json()).data;
-  assert.equal(st.available, true);
+/** Creates a visitor account and returns request headers carrying its session cookie. */
+async function signup(email, password = 'visitor-pass-123') {
+  const res = await fetch(base + '/api/account/signup', { method: 'POST', headers: json, body: JSON.stringify({ name: 'Visitor', email, password }) });
+  assert.equal(res.status, 201);
+  return { ...json, Cookie: cookieOf(res) };
+}
+
+test('visitor accounts: sign up, log in/out, duplicates, throwaway emails, dynamic session length', async () => {
+  const user = await signup('Jane.Doe+cv@gmail.com');
+  assert.equal((await call('GET', '/api/account/me', { headers: user })).body.data.user.email, 'jane.doe+cv@gmail.com');
+  // same Gmail inbox written differently → same account
+  assert.equal((await call('POST', '/api/account/signup', { body: { email: 'janedoe@gmail.com', password: 'another-pass-1' } })).status, 409);
+  assert.equal((await call('POST', '/api/account/signup', { body: { email: 'x@mailinator.com', password: 'another-pass-1' } })).status, 400);
+  assert.equal((await call('POST', '/api/account/signup', { body: { email: 'short@pass.com', password: '123' } })).status, 400);
+  assert.equal((await call('POST', '/api/account/login', { body: { email: 'janedoe@gmail.com', password: 'wrong-password' } })).status, 401);
+
+  // session length comes from admin settings
+  const settings = (await call('GET', '/api/settings')).body.data;
+  assert.equal((await call('PUT', '/api/settings', { body: { ...settings, accounts: { ...settings.accounts, sessionDays: 7 } }, headers: admin })).status, 200);
+  const login = await fetch(base + '/api/account/login', { method: 'POST', headers: json, body: JSON.stringify({ email: 'JaneDoe@gmail.com', password: 'visitor-pass-123' }) });
+  assert.equal(login.status, 200);
+  assert.match(login.headers.getSetCookie().join(';'), /Max-Age=604800/); // 7 days
+  assert.match(login.headers.getSetCookie().join(';'), /HttpOnly/);
+
+  // tampered cookie → not signed in
+  const bad = { ...json, Cookie: cookieOf(login).replace(/.$/, (c) => (c === 'A' ? 'B' : 'A')) };
+  assert.equal((await call('GET', '/api/account/me', { headers: bad })).body.data.user, null);
+
+  const out = await fetch(base + '/api/account/logout', { method: 'POST', headers: user });
+  assert.match(out.headers.getSetCookie().join(';'), /portfolio_user=;/);
+});
+
+test('ai billing: account required; free reviews per account; pay → admin approves → paid credits', async () => {
+  // Not signed in: AI is available but needs an account
+  const anon = (await call('GET', '/api/ai/status')).body.data;
+  assert.equal(anon.available, true);
+  assert.equal(anon.user, null);
+  assert.equal((await call('POST', '/api/ai/ats-review', { body: SAMPLE_CV })).body.error.details.code, 'LOGIN_REQUIRED');
+
+  const wallet = await signup('buyer@example.com');
+  const st = (await call('GET', '/api/ai/status', { headers: wallet })).body.data;
+  assert.equal(st.user.email, 'buyer@example.com');
   assert.equal(st.wallet.freeLeft, 3);
   assert.equal(st.plan.packages.length, 2);
 
@@ -319,7 +356,7 @@ test('ai billing: free reviews, then pay → admin approves → paid credits', a
   assert.equal(empty.body.error.details.code, 'CV_TOO_SHORT');
   assert.equal((await call('GET', '/api/ai/status', { headers: wallet })).body.data.wallet.freeLeft, 3);
 
-  const review = () => call('POST', '/api/ai/ats-review', { body: SAMPLE_CV, headers: wallet });
+  const review = (headers = wallet) => call('POST', '/api/ai/ats-review', { body: SAMPLE_CV, headers });
   for (let i = 2; i >= 0; i--) {
     const r = await review();
     assert.equal(r.status, 200);
@@ -330,19 +367,25 @@ test('ai billing: free reviews, then pay → admin approves → paid credits', a
   assert.equal(blocked.status, 402);
   assert.equal(blocked.body.error.details.code, 'NO_CREDITS');
 
+  // "incognito": logging in again from a fresh browser does NOT reset free reviews
+  const again = await fetch(base + '/api/account/login', { method: 'POST', headers: json, body: JSON.stringify({ email: 'buyer@example.com', password: 'visitor-pass-123' }) });
+  assert.equal((await review({ ...json, Cookie: cookieOf(again) })).status, 402);
+
   // Visitor submits a payment; duplicates are refused
   const pay = await call('POST', '/api/ai/payments', { body: { packageIndex: 0, transactionId: 'TX-12345', sender: '0100' }, headers: wallet });
   assert.equal(pay.status, 201);
   assert.equal(pay.body.data.payment.status, 'pending');
   assert.equal((await call('POST', '/api/ai/payments', { body: { packageIndex: 0, transactionId: 'tx-12345' }, headers: wallet })).status, 409);
   assert.equal((await call('POST', '/api/ai/payments', { body: { packageIndex: 9, transactionId: 'TX-9' }, headers: wallet })).status, 400);
+  assert.equal((await call('POST', '/api/ai/payments', { body: { packageIndex: 0, transactionId: 'TX-anon' } })).status, 401);
 
-  // Admin approves → 5 credits
+  // Admin approves → 5 credits on the account
   assert.equal((await call('GET', '/api/ai/payments')).status, 401);
   const list = (await call('GET', '/api/ai/payments', { headers: admin })).body.data;
-  const id = list.find((p) => p.transactionId === 'TX-12345').id;
-  assert.equal((await call('PATCH', `/api/ai/payments/${id}`, { body: { status: 'approved' }, headers: admin })).status, 200);
-  assert.equal((await call('PATCH', `/api/ai/payments/${id}`, { body: { status: 'approved' }, headers: admin })).status, 400);
+  const p = list.find((x) => x.transactionId === 'TX-12345');
+  assert.equal(p.userEmail, 'buyer@example.com');
+  assert.equal((await call('PATCH', '/api/ai/payments/' + p.id, { body: { status: 'approved' }, headers: admin })).status, 200);
+  assert.equal((await call('PATCH', '/api/ai/payments/' + p.id, { body: { status: 'approved' }, headers: admin })).status, 400);
 
   const paid = await review();
   assert.equal(paid.status, 200);
@@ -356,16 +399,19 @@ test('ai billing: free reviews, then pay → admin approves → paid credits', a
   assert.equal(now.wallet.credits, 4);
   assert.equal(now.payments[0].status, 'approved');
 
-  // Admin can grant credits by wallet code
-  const granted = await call('POST', '/api/ai/wallets/grant', { body: { code: now.wallet.code, credits: 2 }, headers: admin });
+  // Admin can give reviews by email; account overview
+  const granted = await call('POST', '/api/ai/accounts/grant', { body: { email: 'BUYER@example.com', credits: 2 }, headers: admin });
   assert.equal(granted.body.data.credits, 6);
+  assert.equal((await call('POST', '/api/ai/accounts/grant', { body: { email: 'nobody@example.com', credits: 2 }, headers: admin })).status, 404);
+  assert.ok((await call('GET', '/api/ai/accounts/stats', { headers: admin })).body.data.accounts >= 2);
 
-  // Free reviews are dynamic (admin setting)
+  // Free reviews are dynamic (admin setting); a new account gets the new number
   const settings = (await call('GET', '/api/settings')).body.data;
   assert.equal((await call('PUT', '/api/settings', { body: { ...settings, aiPlan: { ...settings.aiPlan, freeReviews: 1 } }, headers: admin })).status, 200);
-  const fresh = (await call('GET', '/api/ai/status')).body.data; // new browser, same IP (cap = 2× free)
+  const fresh = (await call('GET', '/api/ai/status', { headers: await signup('newbie@example.com') })).body.data;
   assert.equal(fresh.wallet.freeTotal, 1);
-  assert.equal(fresh.wallet.freeLeft, 0); // this IP already used 3 free reviews
+  assert.equal(fresh.wallet.freeLeft, 1);
+  await call('PUT', '/api/settings', { body: { ...settings, aiPlan: { ...settings.aiPlan, freeReviews: 3 } }, headers: admin });
 });
 
 after(() => aiServer.close());
@@ -413,8 +459,7 @@ test('ai models: admin adds a provider; key is encrypted, never returned; test +
   assert.deepEqual(models, ['fake-1', 'fake-2-flash']);
 
   // reviews now merge env + admin models
-  const wallet = { ...json, Cookie: cookieOf(await fetch(`${base}/api/ai/status`)) };
-  await call('POST', '/api/ai/wallets/grant', { body: { code: (await call('GET', '/api/ai/status', { headers: wallet })).body.data.wallet.code, credits: 3 }, headers: admin });
+  const wallet = await signup('models-test@example.com');
   const r = await call('POST', '/api/ai/ats-review', { body: SAMPLE_CV, headers: wallet });
   assert.equal(r.status, 200);
   assert.deepEqual(r.body.data.models.map((m) => m.label).sort(), ['My model', 'Ollama (local) (from .env)']);

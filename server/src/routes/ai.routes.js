@@ -9,6 +9,8 @@ import { aiReviewSchema, aiPaymentSchema, aiDecisionSchema, aiGrantSchema, aiPro
 import { aiProviderService, presetsForAdmin } from '../services/ai-providers.service.js';
 import * as ai from '../services/ai.service.js';
 import * as billing from '../services/ai-billing.service.js';
+import { loadUser, requireUser } from '../middlewares/user-auth.js';
+import { publicUser } from '../services/user.service.js';
 
 const router = Router();
 
@@ -35,17 +37,18 @@ const publicPlan = (plan) => ({
   instructions: plan.instructions,
 });
 
-router.get('/status', asyncHandler(async (req, res) => {
+router.get('/status', loadUser, asyncHandler(async (req, res) => {
   if (!(await ai.isAvailable())) return res.json({ success: true, data: { available: false } });
   const plan = await billing.getPlan();
-  const wallet = await billing.getWallet(req, res);
+  const user = req.user;
   res.json({
     success: true,
     data: {
       available: true,
-      wallet: await billing.balance(wallet, req, plan),
+      user: publicUser(user),
+      wallet: user ? await billing.balance(user, plan) : null,
       plan: publicPlan(plan),
-      payments: await billing.walletPayments(wallet.id),
+      payments: user ? await billing.userPayments(user.id) : [],
     },
   });
 }));
@@ -54,23 +57,23 @@ router.post(
   '/ats-review',
   limiter(config.ai.perHour, 'Too many AI reviews in a short time — please try again in an hour.'),
   requireAi,
+  requireUser, // free reviews are counted per account
   validateBody(aiReviewSchema),
   asyncHandler(async (req, res) => {
     // Nothing to review yet → refuse before any free/paid review is used up
     if (ai.contentWords(req.body) < ai.MIN_REVIEW_WORDS) {
       throw AppError.badRequest('Your CV is almost empty — add a summary and at least one job, project or education before asking for an AI review.', { code: 'CV_TOO_SHORT' });
     }
-    const wallet = await billing.getWallet(req, res);
-    const ticket = await billing.reserve(wallet.id, req); // 402 when nothing is left
+    const ticket = await billing.reserve(req.user.id); // 402 when nothing is left
     let review;
     try {
       review = await ai.reviewCv(req.body);
     } catch (err) {
-      await billing.refund(ticket, req); // failed reviews don't cost anything
+      await billing.refund(ticket); // failed reviews don't cost anything
       throw err;
     }
-    const fresh = await billing.getWallet(req, res);
-    res.json({ success: true, data: { ...review, wallet: await billing.balance(fresh, req) } });
+    const { userRepository } = await import('../repositories/index.js');
+    res.json({ success: true, data: { ...review, wallet: await billing.balance(await userRepository.findById(req.user.id)) } });
   }),
 );
 
@@ -78,11 +81,11 @@ router.post(
   '/payments',
   limiter(10, 'Too many payment submissions — please try again later.'),
   requireAi,
+  requireUser,
   validateBody(aiPaymentSchema),
   asyncHandler(async (req, res) => {
-    const wallet = await billing.getWallet(req, res);
-    const payment = await billing.submitPayment(wallet, req.body);
-    res.status(201).json({ success: true, data: { payment, payments: await billing.walletPayments(wallet.id) } });
+    const payment = await billing.submitPayment(req.user, req.body);
+    res.status(201).json({ success: true, data: { payment, payments: await billing.userPayments(req.user.id) } });
   }),
 );
 
@@ -127,8 +130,12 @@ router.patch('/payments/:id', requireAdmin, validateBody(aiDecisionSchema), asyn
   res.json({ success: true, data: await billing.decidePayment(req.params.id, req.body.status) });
 }));
 
-router.post('/wallets/grant', requireAdmin, validateBody(aiGrantSchema), asyncHandler(async (req, res) => {
-  res.json({ success: true, data: await billing.grantCredits(req.body.code, req.body.credits) });
+router.get('/accounts/stats', requireAdmin, asyncHandler(async (_req, res) => {
+  res.json({ success: true, data: await billing.accountStats() });
+}));
+
+router.post('/accounts/grant', requireAdmin, validateBody(aiGrantSchema), asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await billing.grantCredits(req.body.email, req.body.credits) });
 }));
 
 export default router;

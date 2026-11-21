@@ -76,7 +76,7 @@ function renderBuy(ai) {
     ${plan.methods.length
       ? html`<ul class="ats__methods">${plan.methods.map((m) => html`<li><strong>${m.name}</strong>${m.details ? html` — ${m.details}` : ''}</li>`)}</ul>`
       : ''}
-    <p class="ats__note">Your code: <strong>${ai.wallet?.code}</strong> — add it to the payment note if you can.</p>
+    <p class="ats__note">Your account: <strong>${ai.user?.email}</strong> — add it to the payment note if you can.</p>
 
     <p class="ats__ai-label">3. Tell us about your payment</p>
     <div class="ats__buy-grid">
@@ -106,8 +106,33 @@ function renderPayments(payments = []) {
   </div>`;
 }
 
+/** Sign-up / log-in box shown instead of the AI review until the visitor has an account. */
+function renderAuth(ai) {
+  const a = ai.auth;
+  const signup = a.mode === 'signup';
+  const free = ai.plan?.freeReviews ?? 0;
+  return html`<div class="ats__ai">
+    <p class="ats__fixes-title">🤖 AI review <span>— several AI models check your CV together</span></p>
+    <p class="ats__note">${signup
+      ? `Create a free account to use the AI review${free ? ` — you get ${free} free review${free > 1 ? 's' : ''}` : ''}. Your free reviews and any reviews you buy stay with your account on every device.`
+      : 'Log in to use your AI reviews.'}</p>
+    <form class="ats__auth" data-ai-auth-form novalidate>
+      ${signup ? html`<label class="cvb-field"><span>Name <em>(optional)</em></span><input name="name" maxlength="60" value="${a.form.name}" autocomplete="name"></label>` : ''}
+      <label class="cvb-field"><span>Email</span><input name="email" type="email" maxlength="120" value="${a.form.email}" autocomplete="email" required></label>
+      <label class="cvb-field"><span>Password${signup ? html` <em>(at least 8 characters)</em>` : ''}</span>
+        <input name="password" type="password" maxlength="200" value="${a.form.password}" autocomplete="${signup ? 'new-password' : 'current-password'}" required></label>
+      ${a.msg ? html`<p class="ats__ai-error">${a.msg}</p>` : ''}
+      <div class="ats__buy-actions">
+        <button type="submit" class="btn btn--primary btn--sm"${a.busy ? raw(' disabled') : ''}>${a.busy ? 'Please wait…' : signup ? 'Create free account' : 'Log in'}</button>
+        <button type="button" class="cvb-link ats__apply" data-ai-auth-switch>${signup ? 'I already have an account — log in' : 'New here? Create a free account'}</button>
+      </div>
+    </form>
+  </div>`;
+}
+
 function renderAi(ai) {
   if (!ai?.available) return '';
+  if (!ai.user) return renderAuth(ai);
   const r = ai.result;
   const w = ai.wallet;
   const canReview = !w || w.freeLeft > 0 || w.credits > 0;
@@ -123,6 +148,7 @@ function renderAi(ai) {
           : html`<button type="button" class="btn btn--primary btn--sm" data-ai-buy>Buy AI reviews</button>`}
     </div>
     ${w ? html`<p class="ats__wallet">${walletLine(w)}${canReview && !ai.buyOpen ? html` · <button type="button" class="cvb-link ats__apply" data-ai-buy>Buy more</button>` : ''}</p>` : ''}
+    <p class="ats__account">Signed in as <strong>${ai.user.email}</strong> · <button type="button" class="cvb-link ats__apply" data-ai-logout>Log out</button></p>
     ${ai.state === 'error' ? html`<p class="ats__ai-error">${ai.error}</p>` : ''}
     ${ai.buyOpen ? renderBuy(ai) : ''}
     ${renderPayments(ai.payments)}
