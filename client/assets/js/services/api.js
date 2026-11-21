@@ -85,7 +85,12 @@ export const adminApi = {
   deleteMessage: (id) => request(`/contact/messages/${enc(id)}`, { method: 'DELETE' }),
 
   saveProfile: (body) => request('/profile', { method: 'PUT', body }).then(data),
+  settings: () => request('/settings').then(data),
   saveSettings: (body) => request('/settings', { method: 'PUT', body }).then(data),
+  aiAccounts: () => request('/ai/accounts').then(data),
+  updateAiAccount: (id, body) => request(`/ai/accounts/${enc(id)}`, { method: 'PATCH', body }).then(data),
+  deleteAiAccount: (id) => request(`/ai/accounts/${enc(id)}`, { method: 'DELETE' }),
+  logoutAllAiAccounts: () => request('/ai/accounts/logout-all', { method: 'POST' }),
   saveCvData: (body) => request('/cv/data', { method: 'PUT', body }).then(data),
 
   aiProviders: () => request('/ai/providers').then(data),

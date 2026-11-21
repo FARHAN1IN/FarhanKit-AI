@@ -146,3 +146,48 @@ export async function accountStats() {
   const users = await userRepository.findAll();
   return { accounts: users.length, withCredits: users.filter((u) => (u.credits ?? 0) > 0).length };
 }
+
+/* ---------------- Admin: users list ---------------- */
+
+/** Every visitor account with its review balance and payment summary (newest first). */
+export async function listAccounts() {
+  const [users, payments, plan] = await Promise.all([userRepository.findAll(), aiPaymentRepository.findAll(), getPlan()]);
+  return users
+    .map((u) => {
+      const own = payments.filter((p) => p.userId === u.id);
+      const approved = own.filter((p) => p.status === 'approved');
+      const spent = {};
+      approved.forEach((p) => { spent[p.currency] = (spent[p.currency] ?? 0) + Number(p.price); });
+      return {
+        id: u.id,
+        email: u.email,
+        name: u.name ?? '',
+        createdAt: u.createdAt,
+        lastLoginAt: u.lastLoginAt ?? null,
+        freeUsed: u.freeUsed ?? 0,
+        freeLeft: Math.max(0, plan.freeReviews - (u.freeUsed ?? 0)),
+        freeTotal: plan.freeReviews,
+        credits: u.credits ?? 0,
+        payments: { approved: approved.length, pending: own.filter((p) => p.status === 'pending').length, spent },
+      };
+    })
+    .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+}
+
+/** Admin changes to one account: add/remove paid reviews and/or give the free reviews back. */
+export function updateAccount(id, { addCredits = 0, resetFree = false }) {
+  return exclusive(async () => {
+    const user = await userRepository.findById(id);
+    if (!user) throw AppError.notFound('Account not found');
+    const patch = {};
+    if (addCredits) patch.credits = Math.max(0, (user.credits ?? 0) + addCredits);
+    if (resetFree) patch.freeUsed = 0;
+    await userRepository.update(id, patch);
+    return (await listAccounts()).find((a) => a.id === id);
+  });
+}
+
+/** Deletes a visitor account (their payment history stays, with the email). */
+export async function deleteAccount(id) {
+  if (!(await userRepository.remove(id))) throw AppError.notFound('Account not found');
+}

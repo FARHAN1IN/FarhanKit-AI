@@ -36,8 +36,19 @@ export function canonicalEmail(email) {
 
 export const publicUser = (u) => (u ? { id: u.id, name: u.name, email: u.email, createdAt: u.createdAt } : null);
 
-const sign = (id, exp, passwordHash) =>
-  createHmac('sha256', config.session.secret).update(`user|${id}|${exp}|${passwordHash}`).digest('base64url');
+/**
+ * Session token = "<userId>.<issuedAt>.<signature>". The signature covers the password hash,
+ * the user's own session version (admin "Log out" for one user) and the global session version
+ * (admin "Log out all visitors") — bumping either ends existing sessions at once.
+ * Expiry is NOT baked into the token: it is issuedAt + the CURRENT admin setting, so changing
+ * the session length in admin applies immediately to everyone.
+ */
+const sign = (id, iat, user, globalVersion) =>
+  createHmac('sha256', config.session.secret)
+    .update(`user|${id}|${iat}|${user.passwordHash}|${user.sessionVersion ?? 0}|${globalVersion}`)
+    .digest('base64url');
+
+const globalVersion = async () => Number((await settingsService.get()).accounts?.sessionVersion) || 0;
 
 export const userService = {
   async signup({ name = '', email, password }) {
@@ -55,6 +66,7 @@ export const userService = {
       passwordHash: await hashPassword(password),
       freeUsed: 0,
       credits: 0,
+      lastLoginAt: new Date().toISOString(), // signing up logs them in
     });
   },
 
@@ -67,23 +79,41 @@ export const userService = {
     return user;
   },
 
-  /** Signed session token valid for the admin-set number of days. */
+  /** New signed session token; cookie lifetime = the admin-set session length. */
   async token(user) {
-    const ms = await sessionMs();
-    const exp = Date.now() + ms;
-    return { token: `${user.id}.${exp}.${sign(user.id, exp, user.passwordHash)}`, maxAge: ms };
+    const iat = Date.now();
+    return { token: `${user.id}.${iat}.${sign(user.id, iat, user, await globalVersion())}`, maxAge: await sessionMs() };
   },
 
-  /** Returns the user for a session token, or null. */
+  /**
+   * Checks a session token. Returns { user, remainingMs } or null.
+   * remainingMs lets the cookie be refreshed when the admin changes the session length.
+   */
   async verify(token) {
-    const [id, expStr, sig] = String(token ?? '').split('.');
-    const exp = Number(expStr);
-    if (!id || !sig || !exp || exp < Date.now()) return null;
+    const [id, iatStr, sig] = String(token ?? '').split('.');
+    const iat = Number(iatStr);
+    if (!id || !sig || !iat) return null;
+    const remainingMs = iat + (await sessionMs()) - Date.now();
+    if (remainingMs <= 0) return null;
     const user = await userRepository.findById(id);
     if (!user) return null;
-    const expected = Buffer.from(sign(id, exp, user.passwordHash));
+    const expected = Buffer.from(sign(id, iat, user, await globalVersion()));
     const given = Buffer.from(sig);
-    return expected.length === given.length && timingSafeEqual(expected, given) ? user : null;
+    return expected.length === given.length && timingSafeEqual(expected, given) ? { user, remainingMs } : null;
+  },
+
+  /** Admin: end one visitor's sessions (all devices). */
+  async logoutUser(id) {
+    const user = await userRepository.findById(id);
+    if (!user) throw AppError.notFound('Account not found');
+    await userRepository.update(id, { sessionVersion: (user.sessionVersion ?? 0) + 1 });
+  },
+
+  /** Admin: end every visitor session at once. */
+  async logoutAll() {
+    const s = await settingsService.get();
+    const { updatedAt: _u, ...doc } = s;
+    await settingsService.replace({ ...doc, accounts: { ...s.accounts, sessionVersion: (Number(s.accounts?.sessionVersion) || 0) + 1 } });
   },
 
   findByEmail: async (email) => (await userRepository.findAll()).find((u) => u.canonicalEmail === canonicalEmail(email)) ?? null,

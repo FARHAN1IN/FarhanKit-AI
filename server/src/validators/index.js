@@ -156,6 +156,11 @@ export const aiPaymentSchema = {
   transactionId: str(80, { required: true, min: 3 }),
   sender: str(80),
 };
+export const aiAccountUpdateSchema = {
+  addCredits: { type: 'number', min: -1000, max: 1000 },
+  resetFree: { type: 'boolean' },
+  logout: { type: 'boolean' },
+};
 export const aiDecisionSchema = { status: str(10, { required: true, enum: ['approved', 'rejected'] }) };
 export const aiGrantSchema = {
   email: str(120, { required: true, pattern: patterns.EMAIL, message: 'email is invalid' }),
@@ -204,6 +209,7 @@ export const settingsSchema = {
     schema: {
       sessionDays: { type: 'number', min: 1, max: 365 },
       adminSessionHours: { type: 'number', min: 1, max: 720 },
+      sessionVersion: { type: 'number', min: 0 },
     },
   },
   aiPlan: {

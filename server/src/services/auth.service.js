@@ -27,7 +27,7 @@ async function adminSessionMs() {
 }
 
 async function issueToken(account) {
-  const payload = b64(JSON.stringify({ sub: account.username, v: versionOf(account), exp: Date.now() + (await adminSessionMs()) }));
+  const payload = b64(JSON.stringify({ sub: account.username, v: versionOf(account), iat: Date.now() }));
   return `${payload}.${b64(sign(payload))}`;
 }
 
@@ -79,7 +79,9 @@ export const authService = {
 
     let data;
     try { data = JSON.parse(Buffer.from(payload, 'base64url').toString()); } catch { return null; }
-    if (!data.exp || data.exp < Date.now()) return null;
+    // expiry = issued-at + the admin session length set NOW in admin → Settings → Sessions
+    const exp = data.iat ? data.iat + (await adminSessionMs()) : data.exp;
+    if (!exp || exp < Date.now()) return null;
 
     const account = await getAccount();
     if (!account || account.username !== data.sub || versionOf(account) !== data.v) return null;

@@ -43,6 +43,12 @@ export const cvDataService = createDocumentService(cvDataRepository, {});
 const baseSettings = createDocumentService(settingsRepository, SETTINGS_DEFAULTS);
 export const settingsService = {
   ...baseSettings,
+  async replace(data) {
+    // The Settings form doesn't send accounts.sessionVersion ("log out all visitors" counter) — keep it.
+    const current = await baseSettings.get();
+    const sessionVersion = data.accounts?.sessionVersion ?? current.accounts?.sessionVersion;
+    return baseSettings.replace(sessionVersion === undefined ? data : { ...data, accounts: { ...data.accounts, sessionVersion } });
+  },
   async get() {
     const s = await baseSettings.get();
     // Make sure every known section exists exactly once (keeps stored order).

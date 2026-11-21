@@ -545,3 +545,63 @@ test('cv import: detects fields from an uploaded CV (txt), rejects bad files, st
   assert.equal((await upload('hello', 'short.txt', 'text/plain')).status, 400); // no real text
   assert.equal((await upload('%PDF-1.4 broken', 'broken.pdf', 'application/pdf')).status, 400);
 });
+
+test('admin users list: see accounts, add reviews, reset free reviews, delete', async () => {
+  const user = await signup('listed@example.com');
+  await call('POST', '/api/ai/ats-review', { body: SAMPLE_CV, headers: user }); // uses 1 free review
+  assert.equal((await call('GET', '/api/ai/accounts')).status, 401);
+
+  const list = (await call('GET', '/api/ai/accounts', { headers: admin })).body.data;
+  const row = list.find((u) => u.email === 'listed@example.com');
+  assert.equal(row.name, 'Visitor');
+  assert.equal(row.freeUsed, 1);
+  assert.equal(row.credits, 0);
+  assert.ok(!('passwordHash' in row) && !JSON.stringify(list).includes('scrypt$')); // no password data
+
+  const added = (await call('PATCH', `/api/ai/accounts/${row.id}`, { body: { addCredits: 5 }, headers: admin })).body.data;
+  assert.equal(added.credits, 5);
+  const reset = (await call('PATCH', `/api/ai/accounts/${row.id}`, { body: { resetFree: true }, headers: admin })).body.data;
+  assert.equal(reset.freeUsed, 0);
+  assert.equal(reset.freeLeft, reset.freeTotal);
+
+  assert.equal((await call('DELETE', `/api/ai/accounts/${row.id}`, { headers: admin })).status, 204);
+  assert.equal((await call('GET', '/api/account/me', { headers: user })).body.data.user, null); // session ends with the account
+  assert.equal((await call('DELETE', `/api/ai/accounts/${row.id}`, { headers: admin })).status, 404);
+});
+
+test('sessions update live from admin: length change, log out one user, log out everyone', async () => {
+  const a = await signup('session-a@example.com');
+  const b = await signup('session-b@example.com');
+  const me = (h) => call('GET', '/api/account/me', { headers: h }).then((r) => r.body.data.user?.email ?? null);
+  const settings = () => call('GET', '/api/settings').then((r) => r.body.data);
+
+  // Changing the length applies to EXISTING sessions: the cookie is re-sent with the new remaining time
+  let s = await settings();
+  await call('PUT', '/api/settings', { body: { ...s, accounts: { ...s.accounts, sessionDays: 2 } }, headers: admin });
+  const res = await fetch(base + '/api/account/me', { headers: a });
+  const maxAge = Number(res.headers.getSetCookie().join(';').match(/Max-Age=(\d+)/)[1]);
+  assert.ok(maxAge <= 2 * 86400 && maxAge > 2 * 86400 - 60, `cookie follows the new length (${maxAge}s)`);
+
+  // Log out one user from admin → only that user is signed out
+  const row = (await call('GET', '/api/ai/accounts', { headers: admin })).body.data.find((u) => u.email === 'session-a@example.com');
+  assert.equal((await call('PATCH', `/api/ai/accounts/${row.id}`, { body: { logout: true }, headers: admin })).status, 200);
+  assert.equal(await me(a), null);
+  assert.equal(await me(b), 'session-b@example.com');
+
+  // Saving the Settings form (which doesn't send the counter) must not sign anyone out
+  s = await settings();
+  const { sessionVersion: _v, ...accountsWithoutCounter } = s.accounts;
+  await call('PUT', '/api/settings', { body: { ...s, accounts: accountsWithoutCounter }, headers: admin });
+  assert.equal(await me(b), 'session-b@example.com');
+
+  // Log out all visitors
+  assert.equal((await call('POST', '/api/ai/accounts/logout-all')).status, 401);
+  assert.equal((await call('POST', '/api/ai/accounts/logout-all', { headers: admin })).status, 200);
+  assert.equal(await me(b), null);
+  // …but they can log in again
+  const again = await fetch(base + '/api/account/login', { method: 'POST', headers: json, body: JSON.stringify({ email: 'session-b@example.com', password: 'visitor-pass-123' }) });
+  assert.equal(await me({ ...json, Cookie: cookieOf(again) }), 'session-b@example.com');
+
+  s = await settings();
+  await call('PUT', '/api/settings', { body: { ...s, accounts: { ...s.accounts, sessionDays: 30 } }, headers: admin });
+});

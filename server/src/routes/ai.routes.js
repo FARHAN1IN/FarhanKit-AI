@@ -5,12 +5,12 @@ import requireAdmin from '../middlewares/auth.js';
 import validateBody from '../middlewares/validate.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
-import { aiReviewSchema, aiPaymentSchema, aiDecisionSchema, aiGrantSchema, aiProviderSchema } from '../validators/index.js';
+import { aiReviewSchema, aiPaymentSchema, aiDecisionSchema, aiGrantSchema, aiProviderSchema, aiAccountUpdateSchema } from '../validators/index.js';
 import { aiProviderService, presetsForAdmin } from '../services/ai-providers.service.js';
 import * as ai from '../services/ai.service.js';
 import * as billing from '../services/ai-billing.service.js';
 import { loadUser, requireUser } from '../middlewares/user-auth.js';
-import { publicUser } from '../services/user.service.js';
+import { publicUser, userService } from '../services/user.service.js';
 
 const router = Router();
 
@@ -128,6 +128,25 @@ router.get('/payments', requireAdmin, asyncHandler(async (_req, res) => {
 
 router.patch('/payments/:id', requireAdmin, validateBody(aiDecisionSchema), asyncHandler(async (req, res) => {
   res.json({ success: true, data: await billing.decidePayment(req.params.id, req.body.status) });
+}));
+
+router.get('/accounts', requireAdmin, asyncHandler(async (_req, res) => {
+  res.json({ success: true, data: await billing.listAccounts() });
+}));
+
+router.patch('/accounts/:id', requireAdmin, validateBody(aiAccountUpdateSchema), asyncHandler(async (req, res) => {
+  if (req.body.logout) await userService.logoutUser(req.params.id);
+  res.json({ success: true, data: await billing.updateAccount(req.params.id, req.body) });
+}));
+
+router.post('/accounts/logout-all', requireAdmin, asyncHandler(async (_req, res) => {
+  await userService.logoutAll();
+  res.json({ success: true });
+}));
+
+router.delete('/accounts/:id', requireAdmin, asyncHandler(async (req, res) => {
+  await billing.deleteAccount(req.params.id);
+  res.status(204).end();
 }));
 
 router.get('/accounts/stats', requireAdmin, asyncHandler(async (_req, res) => {
