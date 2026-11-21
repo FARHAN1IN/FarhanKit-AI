@@ -12,6 +12,7 @@ import { html, safeUrl, formatMonth } from '../utils/dom.js';
 export const emptyCv = () => ({
   name: '', title: '', email: '', phone: '', location: '', links: [], photo: '',
   summary: '', experience: [], education: [], skills: [], languages: [],
+  projects: [], certifications: [],
   targetJob: '', // only used by the ATS score, never printed
 });
 
@@ -68,6 +69,8 @@ export function renderCv(cv, { placeholders = false } = {}) {
 
   const experience = (cv.experience ?? []).filter((e) => e.role || e.company || e.details);
   const education = (cv.education ?? []).filter((e) => e.degree || e.school);
+  const projects = (cv.projects ?? []).filter((p) => p.name || p.details);
+  const certifications = (cv.certifications ?? []).filter(Boolean);
 
   const empty = !cv.summary && !experience.length && !education.length && !cv.skills?.length;
 
@@ -99,6 +102,18 @@ export function renderCv(cv, { placeholders = false } = {}) {
     )}
 
     ${section(
+      'Projects',
+      projects.length
+        ? html`${projects.map(
+            (p) => html`<article class="cv-item">
+              ${p.name ? html`<div class="cv-item__head"><h3>${p.name}</h3></div>` : ''}
+              ${details(p.details)}
+            </article>`,
+          )}`
+        : '',
+    )}
+
+    ${section(
       'Education',
       education.length
         ? html`${education.map(
@@ -114,6 +129,7 @@ export function renderCv(cv, { placeholders = false } = {}) {
 
     ${section('Skills', tags(cv.skills))}
     ${section('Languages', tags(cv.languages))}
+    ${section('Certifications', certifications.length ? html`<ul class="cv-bullets">${certifications.map((c) => html`<li>${c}</li>`)}</ul>` : '')}
 
     ${empty && placeholders ? html`<p class="cv-empty">Start typing on the left — your CV appears here.</p>` : ''}
   </article>`;

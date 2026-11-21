@@ -39,6 +39,14 @@ const ENTRY = {
     </div>
   </div>`,
 
+  projects: (p = {}) => html`<div class="cvb-entry" data-entry>
+    <button type="button" class="cvb-remove" data-cvb-remove aria-label="Remove this project" title="Remove">✕</button>
+    <div class="cvb-grid">
+      ${input('name', 'Project name', p.name, { placeholder: 'Playwright Automation Framework', max: 120, wide: true })}
+      ${textarea('details', 'What did you do?', p.details, { placeholder: 'One point per line, e.g.\nAutomated 7 test cases with Playwright (POM)', max: 1000, hint: '(one point per line)' })}
+    </div>
+  </div>`,
+
   education: (e = {}) => html`<div class="cvb-entry" data-entry>
     <button type="button" class="cvb-remove" data-cvb-remove aria-label="Remove this education" title="Remove">✕</button>
     <div class="cvb-grid">
@@ -126,8 +134,15 @@ export function createCvBuilder(container, { data = emptyCv(), onChange = () => 
         ${textarea('languages', 'Languages', (d.languages ?? []).join(', '), { placeholder: 'English, German', rows: 1, max: 400, hint: '(optional)' })}
       </div>`)}
 
+      ${step(6, html`Projects &amp; certifications <em class="cvb-optional">(optional)</em>`, html`
+        <div data-list="projects">${(d.projects ?? []).map((p) => ENTRY.projects(p))}</div>
+        <button type="button" class="cvb-add" data-cvb-add="projects">+ Add project</button>
+        <div class="cvb-grid" style="margin-top:0.75rem">
+          ${textarea('certifications', 'Certifications & training', (d.certifications ?? []).join('\n'), { placeholder: 'One per line, e.g.\nTest Automation University – Foundation for Successful Test Automation', rows: 4, max: 5000, hint: '(one per line)' })}
+        </div>`)}
+
       ${ats
-        ? step(6, html`Target job <em class="cvb-optional">(optional)</em>`, textarea('targetJob', 'Paste the job description you’re applying for', d.targetJob, {
+        ? step(7, html`Target job <em class="cvb-optional">(optional)</em>`, textarea('targetJob', 'Paste the job description you’re applying for', d.targetJob, {
             placeholder: 'We are looking for a Frontend Developer with React, TypeScript and REST API experience…',
             max: 8000,
             rows: 5,
@@ -176,6 +191,8 @@ export function createCvBuilder(container, { data = emptyCv(), onChange = () => 
       education: readEntries('education', ['degree', 'school', 'year']),
       skills: splitList(top('skills')),
       languages: splitList(top('languages')),
+      projects: readEntries('projects', ['name', 'details']),
+      certifications: top('certifications').split('\n').map((s) => s.replace(/^\s*[-*•]\s*/, '').trim()).filter(Boolean),
       ...(ats && { targetJob: top('targetJob') }),
     };
   }

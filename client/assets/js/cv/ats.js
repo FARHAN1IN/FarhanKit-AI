@@ -79,6 +79,8 @@ function cvText(cv) {
     cv.title, cv.summary, ...(cv.skills ?? []), ...(cv.languages ?? []),
     ...(cv.experience ?? []).flatMap((e) => [e.role, e.company, e.details]),
     ...(cv.education ?? []).flatMap((e) => [e.degree, e.school]),
+    ...(cv.projects ?? []).flatMap((p) => [p.name, p.details]),
+    ...(cv.certifications ?? []),
   ].filter(Boolean).join('\n').toLowerCase();
 }
 

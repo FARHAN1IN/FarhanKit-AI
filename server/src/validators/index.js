@@ -120,8 +120,14 @@ export const cvDataSchema = {
     max: 10,
     of: { degree: str(120), school: str(120), year: str(40) },
   },
-  skills: { type: 'array', of: 'string', max: 40, itemMax: 60 },
+  skills: { type: 'array', of: 'string', max: 60, itemMax: 60 },
   languages: { type: 'array', of: 'string', max: 15, itemMax: 40 },
+  projects: {
+    type: 'array',
+    max: 12,
+    of: { name: str(120), details: str(1000) },
+  },
+  certifications: { type: 'array', of: 'string', max: 30, itemMax: 160 },
   targetJob: str(8000), // job description for the ATS score (never shown on the CV)
 };
 

@@ -1,28 +1,63 @@
 [
   {
-    "id": "exp-2",
-    "role": "Frontend Developer",
-    "company": "Bright Studio",
-    "location": "Hybrid",
-    "start": "2022-01",
-    "end": "2024-02",
-    "summary": "Built marketing sites and e-commerce storefronts for agency clients.",
+    "id": "34a8578a-90b5-428e-a3d5-48ae2ea1d6ce",
     "highlights": [
-      "Delivered 15+ client projects on schedule",
-      "Introduced a shared component library and design tokens"
-    ]
+      "Developed and implemented comprehensive Test Plans and Strategies for web and mobile enterprise applications, ensuring full coverage and reducing post-release defects.",
+      "Performed manual, regression, smoke, and sanity testing to deliver stable, issue-free releases on time.",
+      "Analyzed Software Requirements Specifications (SRS) and product requirements to design high-quality test scripts and gain in-depth knowledge of the system under test.",
+      "Validated UI/UX using Figma, enhancing user experience and client satisfaction.",
+      "Identified, prioritized, and logged critical defects in Google Sheets, collaborating with developers to ensure rapid resolution and improved product quality.",
+      "Supported automation testing initiatives with Selenium and Playwright, optimizing QA workflows and accelerating delivery without compromising quality.",
+      "Contributed to continuous improvement of QA processes, applying risk-based testing techniques and strengthening overall software reliability."
+    ],
+    "role": "Junior Software Quality Assurance Engineer",
+    "company": "Betopia Group",
+    "start": "2025-03",
+    "end": "2025-11",
+    "summary": "QA for web and mobile enterprise applications.",
+    "createdAt": "2026-11-21T08:13:21.139Z"
   },
   {
-    "id": "exp-3",
-    "role": "B.Sc. Computer Science",
-    "company": "State University",
-    "location": "On campus",
-    "start": "2018-09",
-    "end": "2021-12",
-    "summary": "Focus on software engineering, databases and human–computer interaction.",
+    "id": "a63cf9db-1a34-441b-9983-e17206266ded",
     "highlights": [
-      "Graduated with honors",
-      "Capstone: real-time collaborative editor"
-    ]
+      "Conducted manual testing of new learning platform features to validate functionality and user experience.",
+      "Executed test cases, identified defects, and documented detailed bug reports for timely resolution.",
+      "Prepared structured test reports to support release readiness and overall product quality."
+    ],
+    "role": "Beta Tester",
+    "company": "NetCom Learning",
+    "location": "Contract",
+    "start": "2025-12",
+    "end": "2025-12",
+    "summary": "Manual testing of new learning platform features.",
+    "createdAt": "2026-11-21T08:13:21.160Z"
+  },
+  {
+    "id": "8b3ca924-f557-440b-8c0e-f13ed2b4d9f1",
+    "highlights": [
+      "Completed structured training in manual and automation testing with hands-on use of Selenium, Jira, and Postman.",
+      "Gained practical experience in SDLC and STLC activities including test planning, test execution, and defect reporting.",
+      "Learned CI/CD pipeline concepts and participated in basic integration and optimization exercises to support modern QA workflows."
+    ],
+    "role": "QA Trainee – EDGE-CSE CUET Digital Skill Training Project",
+    "company": "CUET / EDGE-CSE Program",
+    "start": "2024-09",
+    "end": "2025-04",
+    "summary": "Structured training in manual and automation testing.",
+    "createdAt": "2026-11-21T08:13:21.180Z"
+  },
+  {
+    "id": "e91c2c75-653b-4ce1-a6d1-5fee9016846a",
+    "highlights": [
+      "Performed end-to-end testing of web applications, including functional and regression testing.",
+      "Designed and executed test cases, identifying defects and supporting issue resolution.",
+      "Collaborated with team members to improve testing workflows and software quality."
+    ],
+    "role": "Software Quality Assurance Intern",
+    "company": "IT Training Bd",
+    "start": "2024-01",
+    "end": "2024-06",
+    "summary": "End-to-end testing of web applications.",
+    "createdAt": "2026-11-21T08:13:21.195Z"
   }
 ]

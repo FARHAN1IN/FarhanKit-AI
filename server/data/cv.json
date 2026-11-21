@@ -1,0 +1,132 @@
+{
+  "name": "Farhanul Islam",
+  "title": "Software Quality Assurance Engineer",
+  "email": "farhanul160@gmail.com",
+  "phone": "+8801626567442",
+  "location": "Dhaka, Bangladesh",
+  "links": [
+    "linkedin.com/in/farhanul-islam-077a161a9",
+    "github.com/FARHAN1IN"
+  ],
+  "photo": "/uploads/25fada99-45be-40fd-9fba-acf69870fa0d.jpg",
+  "summary": "Motivated QA Engineer aiming to ensure high-quality software through effective manual and automated testing, API and UI validation, defect tracking, and close collaboration with development teams.",
+  "experience": [
+    {
+      "role": "Junior Software Quality Assurance Engineer",
+      "company": "Betopia Group",
+      "dates": "Mar 2025 – Nov 2025",
+      "details": "Developed and implemented comprehensive Test Plans and Strategies for web and mobile enterprise applications, ensuring full coverage and reducing post-release defects.\nPerformed manual, regression, smoke, and sanity testing to deliver stable, issue-free releases on time.\nAnalyzed Software Requirements Specifications (SRS) and product requirements to design high-quality test scripts and gain in-depth knowledge of the system under test.\nValidated UI/UX using Figma, enhancing user experience and client satisfaction.\nIdentified, prioritized, and logged critical defects in Google Sheets, collaborating with developers to ensure rapid resolution and improved product quality.\nSupported automation testing initiatives with Selenium and Playwright, optimizing QA workflows and accelerating delivery without compromising quality.\nContributed to continuous improvement of QA processes, applying risk-based testing techniques and strengthening overall software reliability."
+    },
+    {
+      "role": "Beta Tester",
+      "company": "NetCom Learning",
+      "dates": "Dec 2025 (Contract)",
+      "details": "Conducted manual testing of new learning platform features to validate functionality and user experience.\nExecuted test cases, identified defects, and documented detailed bug reports for timely resolution.\nPrepared structured test reports to support release readiness and overall product quality."
+    },
+    {
+      "role": "QA Trainee – EDGE-CSE CUET Digital Skill Training Project",
+      "company": "CUET / EDGE-CSE Program",
+      "dates": "Sep 2024 – Apr 2025",
+      "details": "Completed structured training in manual and automation testing with hands-on use of Selenium, Jira, and Postman.\nGained practical experience in SDLC and STLC activities including test planning, test execution, and defect reporting.\nLearned CI/CD pipeline concepts and participated in basic integration and optimization exercises to support modern QA workflows."
+    },
+    {
+      "role": "Software Quality Assurance Intern",
+      "company": "IT Training Bd",
+      "dates": "Jan 2024 – Jun 2024",
+      "details": "Performed end-to-end testing of web applications, including functional and regression testing.\nDesigned and executed test cases, identifying defects and supporting issue resolution.\nCollaborated with team members to improve testing workflows and software quality."
+    }
+  ],
+  "education": [
+    {
+      "degree": "B.Sc. in Computer Science & Engineering",
+      "school": "International Islamic University Chittagong, Bangladesh",
+      "year": "2021 – 2025"
+    }
+  ],
+  "skills": [
+    "Selenium (Java)",
+    "Playwright",
+    "Postman",
+    "JMeter",
+    "BurpSuite",
+    "BlazeMeter",
+    "Functional",
+    "Regression",
+    "Smoke",
+    "Sanity",
+    "Integration",
+    "System",
+    "Acceptance",
+    "Unit",
+    "White Box",
+    "Black Box",
+    "Non-Functional",
+    "Java",
+    "Python",
+    "C++",
+    "SQL",
+    "Relational Databases",
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "Figma Validation",
+    "Mobile App Testing",
+    "ADB Logcat (Mobile Monitoring)",
+    "Jira",
+    "Trello",
+    "Test Case & Scenario Design",
+    "Bug Reporting",
+    "UI/UX Compliance Review",
+    "CI/CD Basics",
+    "GitHub",
+    "Windows",
+    "Linux",
+    "Eclipse",
+    "CodeBlocks",
+    "SQL Server Management Studio",
+    "SRS Analysis",
+    "Test Plan & Test Strategy",
+    "Bug Report",
+    "SDLC / STLC"
+  ],
+  "languages": [],
+  "projects": [
+    {
+      "name": "Playwright Automation Framework (JavaScript)",
+      "details": "Automated 7 functional test cases using Playwright (JavaScript) with the Page Object Model (POM) design pattern, and executed cross-browser testing on demo web applications to ensure consistent behavior."
+    },
+    {
+      "name": "Selenium Test Automation – Group Chat Application",
+      "details": "Developed automation scripts using Selenium (Java) for group chat features, including role management and session handling.\nValidated functional workflows such as admin assignment, user removal, and logout scenarios."
+    },
+    {
+      "name": "Selenium Test Automation – Login & Logout",
+      "details": "Automated login and logout scenarios using Selenium (Java), reducing manual regression effort and improving test reliability.\nDesigned test cases and validated authentication workflows."
+    },
+    {
+      "name": "API Testing with Postman",
+      "details": "Performed REST API testing using Postman, validating requests/responses, status codes, and authentication.\nDocumented defects and ensured data integrity across API endpoints."
+    },
+    {
+      "name": "Election Results Dashboard",
+      "details": "Developed a responsive dashboard using HTML, CSS, and JavaScript to visualize real-time election data, and validated UI behavior and functionality through manual testing."
+    }
+  ],
+  "certifications": [
+    "Test Automation University – Foundation for Successful Test Automation",
+    "Test Automation University – Automated Visual Testing with Appium",
+    "10PEARLS University – QA Fundamentals",
+    "IT Training Bd – Software Quality Assurance Internship",
+    "EDGE-CSE CUET – Digital Skill Training (Manual & Automation Testing)",
+    "DataCamp – Introduction to Python",
+    "DataCamp – Intermediate Python",
+    "Wadhwani Foundation Bangladesh: 21st Century Employability Skilling Program – Advanced",
+    "Wadhwani Foundation Bangladesh: 21st Century Employability Skilling Program – Intermediate",
+    "Wadhwani Foundation Bangladesh: 21st Century Employability Skilling Program – Foundation",
+    "Wadhwani Foundation Bangladesh: Employability Skill – Job Ready",
+    "Aspire Institute: Online Leadership Program",
+    "Data Solution 360: Data Literacy"
+  ],
+  "targetJob": "",
+  "updatedAt": "2026-11-21T08:13:21.083Z"
+}

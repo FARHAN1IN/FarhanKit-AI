@@ -52,6 +52,14 @@ function cvToText(cv) {
   if (cv.education?.length) lines.push('', 'EDUCATION', ...cv.education.map((e) => [e.degree, e.school, e.year].filter(Boolean).join(' — ')));
   if (cv.skills?.length) lines.push('', 'SKILLS', cv.skills.join(', '));
   if (cv.languages?.length) lines.push('', 'LANGUAGES', cv.languages.join(', '));
+  if (cv.projects?.length) {
+    lines.push('', 'PROJECTS');
+    for (const p of cv.projects) {
+      if (p.name) lines.push(p.name);
+      lines.push(...(p.details ?? '').split('\n').filter((l) => l.trim()).map((l) => `- ${l.replace(/^\s*[-*•]\s*/, '')}`));
+    }
+  }
+  if (cv.certifications?.length) lines.push('', 'CERTIFICATIONS', ...cv.certifications.map((c) => `- ${c}`));
   return lines.filter((l) => l !== undefined).join('\n').trim();
 }
 

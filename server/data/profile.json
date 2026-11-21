@@ -1,56 +1,59 @@
 {
   "name": "Farhanul Islam",
-  "initials": "YN",
+  "initials": "FI",
   "logoImage": "",
-  "avatar": "",
-  "title": "SQA",
+  "avatar": "/uploads/25fada99-45be-40fd-9fba-acf69870fa0d.jpg",
+  "title": "Software Quality Assurance Engineer",
   "roles": [
-    "Full-Stack Developer",
-    "UI Engineer",
-    "Problem Solver"
+    "SQA Engineer",
+    "Automation Tester",
+    "API & UI Tester"
   ],
-  "tagline": "I build fast, accessible and thoughtfully designed web applications.",
+  "tagline": "Ensuring high-quality software through manual & automated testing, API and UI validation, and defect tracking.",
   "about": [
-    "I'm a developer who enjoys turning complex problems into simple, elegant interfaces. I care about clean architecture, performance and the small details that make a product feel good to use.",
-    "Over the past few years I've shipped production apps end to end — from database schema and REST APIs to pixel-polished frontends. When I'm not coding, I'm reading, learning a new tool, or contributing to open source."
+    "Motivated QA Engineer aiming to ensure high-quality software through effective manual and automated testing, API and UI validation, defect tracking, and close collaboration with development teams.",
+    "Most recently I worked as a Junior Software Quality Assurance Engineer at Betopia Group, building test plans and strategies for web and mobile enterprise applications, running regression, smoke and sanity testing, validating UI/UX against Figma designs, and supporting automation with Selenium and Playwright.",
+    "I hold a B.Sc. in Computer Science & Engineering from International Islamic University Chittagong (2021 – 2025), and completed QA training and certifications from Test Automation University, 10PEARLS University, EDGE-CSE CUET and IT Training Bd."
   ],
-  "location": "Your City, Country",
-  "email": "hello@example.com",
-  "availability": "Open to new opportunities",
+  "location": "Dhaka, Bangladesh",
+  "email": "farhanul160@gmail.com",
+  "availability": "Open to QA opportunities",
   "resumeUrl": "",
   "stats": [
     {
-      "label": "Years experience",
-      "value": 4,
+      "label": "Years in QA",
+      "value": 2,
       "suffix": "+"
     },
     {
-      "label": "Projects shipped",
-      "value": 25,
-      "suffix": "+"
+      "label": "QA roles",
+      "value": 4
     },
     {
-      "label": "Happy clients",
-      "value": 12,
-      "suffix": "+"
+      "label": "Projects",
+      "value": 5
+    },
+    {
+      "label": "Certifications",
+      "value": 13
     }
   ],
   "socials": [
     {
-      "name": "GitHub",
-      "url": "https://github.com/",
-      "icon": "github"
-    },
-    {
       "name": "LinkedIn",
-      "url": "https://linkedin.com/",
+      "url": "https://www.linkedin.com/in/farhanul-islam-077a161a9/",
       "icon": "linkedin"
     },
     {
-      "name": "X",
-      "url": "https://x.com/",
-      "icon": "x"
+      "name": "GitHub",
+      "url": "https://github.com/FARHAN1IN",
+      "icon": "github"
+    },
+    {
+      "name": "Email",
+      "url": "mailto:farhanul160@gmail.com",
+      "icon": "mail"
     }
   ],
-  "updatedAt": "2026-11-20T18:39:19.157Z"
+  "updatedAt": "2026-11-21T08:13:21.076Z"
 }

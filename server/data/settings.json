@@ -1,6 +1,6 @@
 {
-  "siteTitle": "",
-  "metaDescription": "Personal portfolio — projects, skills, experience and contact.",
+  "siteTitle": "Farhanul Islam — Software QA Engineer",
+  "metaDescription": "Portfolio of Farhanul Islam, Software Quality Assurance Engineer in Dhaka, Bangladesh — manual & automation testing (Selenium, Playwright), API testing (Postman) and QA projects.",
   "favicon": "",
   "accentColor": "#7c5cff",
   "accentColor2": "#22d3ee",
@@ -9,6 +9,32 @@
     "greeting": "Hi, I'm",
     "primaryCtaLabel": "View my work",
     "secondaryCtaLabel": "Get in touch"
+  },
+  "cv": {
+    "enabled": true,
+    "label": "Download CV",
+    "showInNav": true,
+    "makerEnabled": true,
+    "makerLabel": "CV Maker",
+    "aiEnabled": true
+  },
+  "aiPlan": {
+    "freeReviews": 3,
+    "currency": "USD",
+    "packages": [
+      {
+        "name": "Starter",
+        "credits": 5,
+        "price": 2
+      },
+      {
+        "name": "Pro",
+        "credits": 20,
+        "price": 5
+      }
+    ],
+    "methods": [],
+    "instructions": "Send the payment using one of the methods below, then enter the transaction ID. Your reviews are added as soon as we confirm the payment."
   },
   "sections": [
     {
@@ -56,5 +82,5 @@
     "buttonLabel": "Send message",
     "successMessage": "Thanks! Your message has been received."
   },
-  "updatedAt": "2026-11-20T18:38:43.286Z"
+  "updatedAt": "2026-11-21T08:13:21.089Z"
 }

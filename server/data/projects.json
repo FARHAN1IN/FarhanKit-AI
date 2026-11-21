@@ -1,1 +1,74 @@
-[]
+[
+  {
+    "id": "05fb21ae-eb42-49ff-b403-de350e014779",
+    "tags": [
+      "Playwright",
+      "JavaScript",
+      "POM",
+      "Cross-browser"
+    ],
+    "featured": true,
+    "title": "Playwright Automation Framework (JavaScript)",
+    "description": "Automated 7 functional test cases using Playwright (JavaScript) with the Page Object Model (POM) design pattern, and executed cross-browser testing on demo web applications to ensure consistent behavior.",
+    "category": "Automation",
+    "order": 0,
+    "createdAt": "2026-11-21T08:13:21.334Z"
+  },
+  {
+    "id": "8e396c2a-d56d-4958-b546-070573481432",
+    "tags": [
+      "Selenium",
+      "Java",
+      "Automation"
+    ],
+    "featured": true,
+    "title": "Selenium Test Automation – Group Chat Application",
+    "description": "Developed automation scripts using Selenium (Java) for group chat features, including role management and session handling. Validated functional workflows such as admin assignment, user removal, and logout scenarios.",
+    "category": "Automation",
+    "order": 1,
+    "createdAt": "2026-11-21T08:13:21.351Z"
+  },
+  {
+    "id": "1631b7d2-1d7c-49e1-8377-570f65fbd772",
+    "tags": [
+      "Selenium",
+      "Java",
+      "Authentication"
+    ],
+    "featured": true,
+    "title": "Selenium Test Automation – Login & Logout",
+    "description": "Automated login and logout scenarios using Selenium (Java), reducing manual regression effort and improving test reliability. Designed test cases and validated authentication workflows.",
+    "category": "Automation",
+    "order": 2,
+    "createdAt": "2026-11-21T08:13:21.371Z"
+  },
+  {
+    "id": "37beda3e-19cc-4f11-885f-95b53111e04b",
+    "tags": [
+      "Postman",
+      "REST API",
+      "API Testing"
+    ],
+    "featured": false,
+    "title": "API Testing with Postman",
+    "description": "Performed REST API testing using Postman, validating requests/responses, status codes, and authentication. Documented defects and ensured data integrity across API endpoints.",
+    "category": "API Testing",
+    "order": 3,
+    "createdAt": "2026-11-21T08:13:21.395Z"
+  },
+  {
+    "id": "34ff5aef-e507-42df-a6ea-153324986e0e",
+    "tags": [
+      "HTML",
+      "CSS",
+      "JavaScript",
+      "Manual Testing"
+    ],
+    "featured": false,
+    "title": "Election Results Dashboard",
+    "description": "Developed a responsive dashboard using HTML, CSS, and JavaScript to visualize real-time election data, and validated UI behavior and functionality through manual testing.",
+    "category": "Web",
+    "order": 4,
+    "createdAt": "2026-11-21T08:13:21.411Z"
+  }
+]
