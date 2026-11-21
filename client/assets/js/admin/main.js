@@ -9,9 +9,10 @@ import { projectsView, experienceView, skillsView } from './views/collections.js
 import { accountView } from './views/account.js';
 import { cvView } from './views/cv.js';
 import { aiSalesView } from './views/ai-sales.js';
+import { aiModelsView } from './views/ai-models.js';
 
 /** Tab order in the dashboard. Add a view here to add a tab. */
-const VIEWS = [messagesView, profileView, cvView, settingsView, aiSalesView, projectsView, experienceView, skillsView, accountView];
+const VIEWS = [messagesView, profileView, cvView, settingsView, aiModelsView, aiSalesView, projectsView, experienceView, skillsView, accountView];
 
 /*
  * Session: the server keeps the login in an HttpOnly cookie that JavaScript cannot read.

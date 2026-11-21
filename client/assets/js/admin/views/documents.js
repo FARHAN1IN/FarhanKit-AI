@@ -178,7 +178,7 @@ export const settingsView = documentView({
               name: '_help3',
               type: 'note',
               wide: true,
-              text: 'Add one or more free keys in server/.env (GEMINI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, or OLLAMA_ENABLED=true) — all configured models review the CV together and their results are merged. Reviews per visitor are limited by AI_REVIEWS_PER_HOUR to protect your free quotas. The CV text is sent to that AI service; photos are never sent.',
+              text: 'Add your AI models and their API keys in the "AI models" tab — every model that is on reviews the CV and the results are merged. The CV text is sent to those AI services; photos are never sent.',
             },
           ],
         },

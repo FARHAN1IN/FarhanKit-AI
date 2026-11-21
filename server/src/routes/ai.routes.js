@@ -5,7 +5,8 @@ import requireAdmin from '../middlewares/auth.js';
 import validateBody from '../middlewares/validate.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
-import { aiReviewSchema, aiPaymentSchema, aiDecisionSchema, aiGrantSchema } from '../validators/index.js';
+import { aiReviewSchema, aiPaymentSchema, aiDecisionSchema, aiGrantSchema, aiProviderSchema } from '../validators/index.js';
+import { aiProviderService, presetsForAdmin } from '../services/ai-providers.service.js';
 import * as ai from '../services/ai.service.js';
 import * as billing from '../services/ai-billing.service.js';
 
@@ -80,6 +81,32 @@ router.post(
     res.status(201).json({ success: true, data: { payment, payments: await billing.walletPayments(wallet.id) } });
   }),
 );
+
+/* ---------- Admin: AI models (API keys) ---------- */
+router.get('/providers', requireAdmin, asyncHandler(async (_req, res) => {
+  res.json({ success: true, data: { providers: await aiProviderService.list(), presets: presetsForAdmin() } });
+}));
+
+router.post('/providers', requireAdmin, validateBody(aiProviderSchema), asyncHandler(async (req, res) => {
+  res.status(201).json({ success: true, data: await aiProviderService.create(req.body) });
+}));
+
+router.patch('/providers/:id', requireAdmin, validateBody(aiProviderSchema, { partial: true }), asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await aiProviderService.update(req.params.id, req.body) });
+}));
+
+router.delete('/providers/:id', requireAdmin, asyncHandler(async (req, res) => {
+  await aiProviderService.remove(req.params.id);
+  res.status(204).end();
+}));
+
+router.post('/providers/:id/test', requireAdmin, asyncHandler(async (req, res) => {
+  const p = await aiProviderService.getForCall(req.params.id);
+  if (!p) throw AppError.notFound('AI model not found');
+  const result = { ...(await ai.testProvider(p)), at: new Date().toISOString() };
+  await aiProviderService.saveTestResult(p.id, result);
+  res.json({ success: true, data: result });
+}));
 
 /* ---------- Admin: approve payments, grant credits ---------- */
 router.get('/payments', requireAdmin, asyncHandler(async (_req, res) => {

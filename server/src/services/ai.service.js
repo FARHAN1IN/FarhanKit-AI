@@ -1,14 +1,11 @@
 /**
- * AI ATS review using a FREE AI provider (OpenAI-compatible chat API, plain fetch — no SDK).
- *
- *   gemini      Google AI Studio free tier   → key: https://aistudio.google.com/apikey
- *   groq        Groq free tier (Llama)       → key: https://console.groq.com/keys
- *   openrouter  OpenRouter ":free" models    → key: https://openrouter.ai/keys
- *   ollama      Local model, no key, offline → https://ollama.com  (ollama pull llama3.1)
+ * AI ATS review (OpenAI-compatible chat API, plain fetch — no SDK).
+ * Providers come from admin → AI models (keys stored encrypted) and/or environment variables;
+ * every enabled provider reviews the CV and the answers are merged.
  */
-import config from '../config/index.js';
 import AppError from '../utils/AppError.js';
 import { settingsService } from './index.js';
+import { aiProviderService } from './ai-providers.service.js';
 
 const SYSTEM = `You are an expert recruiter and ATS (applicant tracking system) specialist.
 Review CVs the way ATS software (Workday, Greenhouse, Lever, Taleo) and recruiters do:
@@ -96,7 +93,7 @@ function normalize(r, hasJob) {
 }
 
 export async function isAvailable() {
-  if (!config.ai.enabled) return false;
+  if (!(await aiProviderService.active()).length) return false;
   const settings = await settingsService.get();
   return settings.cv.aiEnabled !== false;
 }
@@ -124,6 +121,35 @@ async function askProvider(p, user, hasJob) {
   }
   const payload = await res.json();
   return normalize(parseJson(payload.choices?.[0]?.message?.content ?? ''), hasJob);
+}
+
+/**
+ * Admin "Test" button: a tiny request to check the key, URL and model work.
+ * Returns { ok, ms, model?, error? } — never throws.
+ */
+export async function testProvider(p) {
+  const started = Date.now();
+  try {
+    const res = await fetch(`${p.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(p.apiKey && { Authorization: `Bearer ${p.apiKey}` }) },
+      body: JSON.stringify({ model: p.model, max_tokens: 5, messages: [{ role: 'user', content: 'Reply with: OK' }] }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    const ms = Date.now() - started;
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      let msg = body;
+      try { const j = JSON.parse(body); msg = j.error?.message ?? j[0]?.error?.message ?? j.message ?? body; } catch { /* plain text */ }
+      const hint = res.status === 401 || res.status === 403 ? 'API key is wrong or not allowed' : res.status === 404 ? 'model name or URL is wrong' : res.status === 429 ? 'rate limit / free quota reached' : '';
+      return { ok: false, ms, error: `HTTP ${res.status}${hint ? ` — ${hint}` : ''}: ${String(msg).slice(0, 160)}` };
+    }
+    const payload = await res.json().catch(() => ({}));
+    if (!payload.choices) return { ok: false, ms, error: 'Unexpected answer — is this an OpenAI-compatible API URL?' };
+    return { ok: true, ms, model: payload.model ?? p.model };
+  } catch (err) {
+    return { ok: false, ms: Date.now() - started, error: err.name === 'TimeoutError' ? 'No answer within 30 s' : `Could not reach ${p.baseUrl} (${err.cause?.code ?? err.message})` };
+  }
 }
 
 /* ---------- merging several reviews into one ---------- */
@@ -191,13 +217,14 @@ export async function reviewCv(cv) {
     job ? `<job_description>\n${job}\n</job_description>` : 'No job description was given — review general ATS-readiness.'
   }\n\nReview this CV and reply with the JSON object only.`;
 
-  // Ask every configured free model at the same time.
-  const results = await Promise.allSettled(config.ai.providers.map((p) => askProvider(p, user, Boolean(job))));
+  // Ask every enabled model at the same time.
+  const providers = await aiProviderService.active();
+  const results = await Promise.allSettled(providers.map((p) => askProvider(p, user, Boolean(job))));
 
   const ok = [];
   const failed = [];
   results.forEach((r, i) => {
-    const p = config.ai.providers[i];
+    const p = providers[i];
     if (r.status === 'fulfilled') ok.push({ label: p.label, review: r.value });
     else {
       console.error(`[ai] ${p.id} failed: ${r.reason?.message ?? r.reason}`);

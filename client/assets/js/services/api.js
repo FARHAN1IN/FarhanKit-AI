@@ -80,6 +80,12 @@ export const adminApi = {
   saveSettings: (body) => request('/settings', { method: 'PUT', body }).then(data),
   saveCvData: (body) => request('/cv/data', { method: 'PUT', body }).then(data),
 
+  aiProviders: () => request('/ai/providers').then(data),
+  createAiProvider: (body) => request('/ai/providers', { method: 'POST', body }).then(data),
+  updateAiProvider: (id, body) => request(`/ai/providers/${enc(id)}`, { method: 'PATCH', body }).then(data),
+  deleteAiProvider: (id) => request(`/ai/providers/${enc(id)}`, { method: 'DELETE' }),
+  testAiProvider: (id) => request(`/ai/providers/${enc(id)}/test`, { method: 'POST' }).then(data),
+
   aiPayments: () => request('/ai/payments').then(data),
   decideAiPayment: (id, status) => request(`/ai/payments/${enc(id)}`, { method: 'PATCH', body: { status } }).then(data),
   grantAiCredits: (code, credits) => request('/ai/wallets/grant', { method: 'POST', body: { code, credits } }).then(data),

@@ -12,3 +12,4 @@ export const messageRepository = createRepository('messages.json');
 export const aiWalletRepository = createRepository('ai-wallets.json');
 export const aiPaymentRepository = createRepository('ai-payments.json');
 export const aiIpUsageRepository = createRepository('ai-ip-usage.json');
+export const aiProviderRepository = createRepository('ai-providers.json'); // API keys (encrypted)

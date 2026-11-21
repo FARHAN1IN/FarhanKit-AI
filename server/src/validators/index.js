@@ -1,4 +1,5 @@
 import { patterns } from './schema.js';
+import { AI_PROVIDER_TYPES } from '../config/ai-presets.js';
 
 const str = (max, extra = {}) => ({ type: 'string', max, ...extra });
 const link = (max = 500) => str(max, { pattern: patterns.LINK, message: 'must be a URL (https://…) or a path starting with /' });
@@ -148,6 +149,16 @@ export const aiDecisionSchema = { status: str(10, { required: true, enum: ['appr
 export const aiGrantSchema = {
   code: str(12, { required: true, min: 4 }),
   credits: { type: 'number', required: true, min: -1000, max: 1000 },
+};
+
+/* ---------- AI models (admin) ---------- */
+export const aiProviderSchema = {
+  type: str(20, { required: true, enum: AI_PROVIDER_TYPES }),
+  label: str(60),
+  apiKey: str(400), // empty on edit = keep the saved key
+  model: str(150),
+  baseUrl: str(300, { pattern: /^https?:\/\/\S+$/i, message: 'API URL must start with http:// or https://' }),
+  enabled: { type: 'boolean' },
 };
 
 /* ---------- Site settings (single document) ---------- */

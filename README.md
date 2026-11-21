@@ -141,3 +141,13 @@ is filled with the content committed in `server/data` and `server/uploads`.
 Notes: the free instance sleeps after 15 minutes without visitors (the next visit takes ~30–50 s).
 Add more free AI keys (`GROQ_API_KEY`, `OPENROUTER_API_KEY`) under the service's *Environment* tab.
 After the first start you can delete `ADMIN_PASSWORD` there and change the password in admin → Account.
+
+## AI models for the ATS review
+
+Admin → **AI models**: add any number of AI providers with their API keys — Google Gemini, Groq,
+OpenRouter (all have free keys), a local Ollama, or any other OpenAI-compatible API by URL.
+Every model that is switched on reviews each CV and the results are merged (average score,
+combined tips). Keys are stored encrypted (AES-256-GCM, derived from `SESSION_SECRET`) and are
+never sent back to the browser — only their last 4 characters are shown. **Test** checks a key
+right away. If `SESSION_SECRET` ever changes, saved keys must be entered again.
+Keys set as environment variables (`GEMINI_API_KEY`, …) still work and are listed read-only.

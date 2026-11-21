@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { AI_PRESETS } from './ai-presets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const serverRoot = path.resolve(__dirname, '..', '..');
@@ -14,33 +15,29 @@ if (sessionSecret.length < 32) {
 }
 
 /**
- * Free AI providers (all OpenAI-compatible). Every provider that has a key (or, for Ollama,
- * OLLAMA_ENABLED=true) is used — their reviews are merged into one.
- * Default models can be overridden with <NAME>_MODEL, e.g. GEMINI_MODEL.
+ * AI providers configured through environment variables (optional — admins can also add
+ * providers with their keys in admin → AI models). Every configured provider is used and
+ * their reviews are merged. Default models can be overridden with <NAME>_MODEL, e.g. GEMINI_MODEL.
  */
-const AI_PROVIDERS = [
-  { id: 'gemini', label: 'Gemini', keyVar: 'GEMINI_API_KEY', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash' },
-  { id: 'groq', label: 'Groq (Llama)', keyVar: 'GROQ_API_KEY', baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
-  { id: 'openrouter', label: 'OpenRouter', keyVar: 'OPENROUTER_API_KEY', baseUrl: 'https://openrouter.ai/api/v1', model: 'meta-llama/llama-3.3-70b-instruct:free' },
-  { id: 'ollama', label: 'Ollama (local)', keyVar: null, baseUrl: 'http://localhost:11434/v1', model: 'llama3.1' },
-];
-
 function aiConfig() {
-  const providers = AI_PROVIDERS.map((p) => {
-    const NAME = p.id.toUpperCase();
-    return {
-      id: p.id,
-      label: p.label,
-      apiKey: p.keyVar ? process.env[p.keyVar] ?? '' : '',
-      baseUrl: (process.env[`${NAME}_BASE_URL`] || p.baseUrl).replace(/\/$/, ''),
-      model: process.env[`${NAME}_MODEL`] || p.model,
-      on: p.keyVar ? Boolean(process.env[p.keyVar]) : process.env.OLLAMA_ENABLED === 'true',
-    };
-  }).filter((p) => p.on);
+  const providers = Object.entries(AI_PRESETS)
+    .filter(([type]) => type !== 'custom')
+    .map(([type, p]) => {
+      const NAME = type.toUpperCase();
+      return {
+        id: `env-${type}`,
+        type,
+        label: `${p.label} (from .env)`,
+        apiKey: p.envKey ? process.env[p.envKey] ?? '' : '',
+        baseUrl: (process.env[`${NAME}_BASE_URL`] || p.baseUrl).replace(/\/$/, ''),
+        model: process.env[`${NAME}_MODEL`] || p.model,
+        on: p.envKey ? Boolean(process.env[p.envKey]) : process.env.OLLAMA_ENABLED === 'true',
+      };
+    })
+    .filter((p) => p.on);
 
   return {
     providers,
-    enabled: providers.length > 0,
     perHour: Number(process.env.AI_REVIEWS_PER_HOUR ?? 10), // per visitor IP — protects your free quotas
   };
 }

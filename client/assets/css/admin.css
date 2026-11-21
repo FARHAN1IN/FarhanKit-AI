@@ -96,3 +96,12 @@ form[data-grant] { margin-bottom: var(--space-6); }
   .repeater__controls { padding-top: 0; justify-content: flex-end; }
   .group, .repeater { padding: var(--space-3); }
 }
+
+/* AI models */
+.ai-list-title { margin: var(--space-8) 0 var(--space-4); font-size: 1.05rem; }
+.ai-test { margin: 0; font-size: 0.88rem; color: var(--text-muted); white-space: normal !important; }
+.ai-test small { color: var(--text-muted); }
+.ai-test.is-ok { color: var(--success); }
+.ai-test.is-bad { color: var(--danger); }
+.admin-item.is-off { opacity: 0.7; }
+.admin-item h3 .tag { vertical-align: middle; margin-left: var(--space-1); }

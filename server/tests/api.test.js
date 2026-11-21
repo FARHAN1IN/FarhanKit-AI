@@ -347,3 +347,52 @@ test('ai billing: free reviews, then pay → admin approves → paid credits', a
 });
 
 after(() => aiServer.close());
+
+test('ai models: admin adds a provider; key is encrypted, never returned; test + review use it', async () => {
+  const aiUrl = process.env.OLLAMA_BASE_URL; // the fake provider
+  assert.equal((await call('GET', '/api/ai/providers')).status, 401);
+
+  const before = (await call('GET', '/api/ai/providers', { headers: admin })).body.data;
+  assert.ok(before.presets.some((p) => p.type === 'gemini'));
+  assert.ok(before.providers.some((p) => p.source === 'env')); // the .env (Ollama) provider is listed read-only
+
+  // validation
+  assert.equal((await call('POST', '/api/ai/providers', { body: { type: 'gemini' }, headers: admin })).status, 400); // key required
+  assert.equal((await call('POST', '/api/ai/providers', { body: { type: 'custom', model: 'x' }, headers: admin })).status, 400); // URL required
+  assert.equal((await call('POST', '/api/ai/providers', { body: { type: 'nope' }, headers: admin })).status, 400);
+
+  const secret = 'sk-test-SECRET-key-1234';
+  const created = await call('POST', '/api/ai/providers', {
+    body: { type: 'custom', label: 'My model', baseUrl: aiUrl, model: 'fake-1', apiKey: secret },
+    headers: admin,
+  });
+  assert.equal(created.status, 201);
+  const id = created.body.data.id;
+  assert.equal(created.body.data.keyHint, '••••1234');
+  assert.ok(!JSON.stringify(created.body).includes(secret));
+
+  // stored encrypted
+  const stored = await fs.readFile(path.join(dataDir, 'ai-providers.json'), 'utf8');
+  assert.ok(!stored.includes(secret));
+
+  // Test button
+  const t = await call('POST', `/api/ai/providers/${id}/test`, { headers: admin });
+  assert.equal(t.body.data.ok, true);
+
+  // reviews now merge env + admin models
+  const wallet = { ...json, Cookie: cookieOf(await fetch(`${base}/api/ai/status`)) };
+  await call('POST', '/api/ai/wallets/grant', { body: { code: (await call('GET', '/api/ai/status', { headers: wallet })).body.data.wallet.code, credits: 3 }, headers: admin });
+  const r = await call('POST', '/api/ai/ats-review', { body: { name: 'Jane' }, headers: wallet });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.data.models.map((m) => m.label).sort(), ['My model', 'Ollama (local) (from .env)']);
+
+  // edit without key keeps the key; disable removes it from reviews
+  const edited = await call('PATCH', `/api/ai/providers/${id}`, { body: { enabled: false, model: 'fake-2' }, headers: admin });
+  assert.equal(edited.body.data.keyHint, '••••1234');
+  assert.equal(edited.body.data.enabled, false);
+  const r2 = await call('POST', '/api/ai/ats-review', { body: { name: 'Jane' }, headers: wallet });
+  assert.deepEqual(r2.body.data.models.map((m) => m.label), ['Ollama (local) (from .env)']);
+
+  assert.equal((await call('DELETE', `/api/ai/providers/${id}`, { headers: admin })).status, 204);
+  assert.equal((await call('DELETE', `/api/ai/providers/${id}`, { headers: admin })).status, 404);
+});
